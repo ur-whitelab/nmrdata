@@ -2,9 +2,9 @@ import tensorflow as tf
 import pickle
 import numpy as np
 from graphnmr import *
-import matplotlib.pyplot as plt
-import os, sys
-
+import os
+import sys
+from graphnmr import *
 
 if len(sys.argv) != 4:
     print('Usage: [input_filename] [embeddings] [output_filename]')
@@ -24,8 +24,9 @@ name_counts = count_names(fn, embeddings)
 total = sum(name_counts)
 class_number = sum([1 if x > 0 else 0 for x in name_counts])
 
-print('Found {} classes out of {} names. Total counts is {}'.format(class_number, len(name_counts), total))
-    
+print('Found {} classes out of {} names. Total counts is {}'.format(
+    class_number, len(name_counts), total))
+
 init_data_op, data = load_records(fn, batch_size=1)
 with tf.Session() as sess, tf.python_io.TFRecordWriter(sys.argv[3],
                                                        options=tf.io.TFRecordCompressionType.GZIP) as writer:
@@ -33,9 +34,9 @@ with tf.Session() as sess, tf.python_io.TFRecordWriter(sys.argv[3],
     try:
         i = 0
         while True:
-            args = sess.run([data['features'], 
-                             data['mask'], 
-                             data['nlist'], 
+            args = sess.run([data['features'],
+                             data['mask'],
+                             data['nlist'],
                              data['peaks'],
                              data['class'],
                              data['name'],
@@ -44,7 +45,8 @@ with tf.Session() as sess, tf.python_io.TFRecordWriter(sys.argv[3],
             args = [a[0] for a in args]
             # overwrite mask with weights
             # taking the sklearn equation
-            args[1] = args[1] * (total / class_number / np.maximum(name_counts[args[5].astype(np.int32)], 1))
+            args[1] = args[1] * (total / class_number /
+                                 np.maximum(name_counts[args[5].astype(np.int32)], 1))
             record = make_tfrecord(*args)
             writer.write(record.SerializeToString())
             i += 1
@@ -52,5 +54,3 @@ with tf.Session() as sess, tf.python_io.TFRecordWriter(sys.argv[3],
     except tf.errors.OutOfRangeError:
         print('Dataset complete')
         pass
-
-

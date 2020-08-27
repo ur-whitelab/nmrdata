@@ -14,19 +14,17 @@ setup(name='nmrdata',
       license='MIT',
       packages=['nmrdata'],
       install_requires=[
-          'tensorflow >= 2.3',
+          'tensorflow == 2.3',
           'click',
-          'numpy',
+          'numpy==1.18.5',
           'importlib_resources'],
-      extra_requires={
-          'parse': ['openmm', 'pdbfixer', 'rdkit', 'biopython', 'gsd']
+      extras_require={
+          'parse': ['pdbfixer @ https://github.com/openmm/pdbfixer/archive/master.zip', 'biopython', 'gsd']
       },
-      dependency_links=[
-          'https://github.com/openmm/pdbfixer/archive/master.zip'],
       zip_safe=True,
       entry_points='''
         [console_scripts]
-        nmrdata=nmrdata.main:main
+        nmrdata=nmrdata.parse.main:nmrdata
             ''',
       package_data={'nmrdata': ['data/*.pb']}
       )

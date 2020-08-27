@@ -1,4 +1,6 @@
-import pickle, os, glob
+import pickle
+import os
+import glob
 
 # just walks through given directory and matches-up corrs with pdbs
 data = dict()
@@ -12,6 +14,6 @@ for f in glob.glob('**/*.pdbH', recursive=True):
 for f in glob.glob('**/*.pdbresno', recursive=True):
     key = f.split(os.path.sep)[-1].split('_')[0]
     data[key]['corr'] = f
-    
+
 with open('data.pb', 'wb') as f:
     pickle.dump(data, f)

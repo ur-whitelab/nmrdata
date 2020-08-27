@@ -5,6 +5,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 import io
 import tqdm
+from graphnmr import *
 
 
 def padto(a, shape):

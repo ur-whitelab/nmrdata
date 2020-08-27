@@ -1,5 +1,4 @@
 from .loading import *
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -82,9 +81,13 @@ def validate_peaks(filename, embeddings, batch_size=32):
         if step * i > 20 and histogram[i] > 0:
             print('Suspicious peaks @ {} (N = {})'.format(
                 step * i, histogram[i]))
-    plt.plot(np.arange(0 + step, hist_range[1] - step, step), histogram)
-    plt.xlim(0, 200)
-    plt.savefig('peak-histogram.png', dpi=300)
+    try:
+        import matplotlib.pyplot as plt
+        plt.plot(np.arange(0 + step, hist_range[1] - step, step), histogram)
+        plt.xlim(0, 200)
+        plt.savefig('peak-histogram.png', dpi=300)
+    except ModuleNotFoundError:
+        pass
 
 
 def validate_embeddings(filename, embeddings, batch_size=32):
@@ -159,7 +162,6 @@ def write_peak_labels(filename, embeddings, record_info, output, batch_size=32):
     with tf.Session() as sess, open(output, 'w') as f:
         sess.run(init_data_op)
         try:
-            count = 0
             while True:
                 mask, peaks, name, c, index = sess.run(
                     [data['mask'], data['peaks'], data['name'], data['class'], data['index']])
@@ -242,7 +244,6 @@ def duplicate_labels(filename, embeddings, record_info, batch_size=32, atom_filt
     with tf.Session() as sess:
         sess.run(init_data_op)
         try:
-            count = 0
             while True:
                 mask, peaks, name, c, index = sess.run(
                     [data['mask'], data['peaks'], data['name'], data['class'], data['index']])
