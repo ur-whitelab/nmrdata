@@ -6,10 +6,6 @@ import click
 import pickle
 
 
-MAX_ATOM_NUMBER = 256
-NEIGHBOR_NUMBER = 16
-
-
 def load_records(filename, batchsize=1):
     data = tf.data.TFRecordDataset(
         filename, compression_type='GZIP').map(data_parse)
@@ -54,8 +50,7 @@ def write_record_traj(positions, atom_data, mask_data,
                       embedding_dicts):
     import gsd.hoomd
     snap = gsd.hoomd.Snapshot()
-    # subtract 1 because the Z is at the end.
-    N = MAX_ATOM_NUMBER - sum(atom_data == embedding_dicts['atom']['X']) - 1
+    N = sum(atom_data != embedding_dicts['atom']['X'])
     snap.particles.N = N
     # need keys sorted by index
     atom_types = list(embedding_dicts['atom'].items())
@@ -77,7 +72,8 @@ def write_record_traj(positions, atom_data, mask_data,
     bt_trans = {'none': 'X', 'nonbonded': 'B', 1: 'S',
                 2: '2', 3: '3', 4: '4', 5: '5', 6: '6'}
     snap.bonds.types = [bt_trans[x[0]] for x in bond_types]
-    bonds = np.hstack((np.repeat(np.arange(N), NEIGHBOR_NUMBER).reshape(-1,
+    neighbor_number = nlist.shape[1]
+    bonds = np.hstack((np.repeat(np.arange(N), neighbor_number).reshape(-1,
                                                                         1), nlist[:N, :, 1].reshape(-1, 1))).astype(np.int)
     bond_ids = nlist[:N, :, 2].reshape(-1)
     # filter out duplicate bonds
@@ -91,20 +87,42 @@ def write_record_traj(positions, atom_data, mask_data,
 
 
 def data_parse(proto):
-    features = {'bond-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER, NEIGHBOR_NUMBER, 3], tf.float32),
-                'atom-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER], tf.int64),
-                'peak-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER], tf.float32),
-                'mask-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER], tf.float32),
-                'name-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER], tf.int64),
-                'residue': tf.io.FixedLenFeature([1], tf.int64),
-                'indices': tf.io.FixedLenFeature([3], tf.int64)
-                }
+    features = {
+        'atom-number': tf.io.FixedLenFeature([], tf.int64),
+        'neighbor-number': tf.io.FixedLenFeature([], tf.int64),
+        'bond-data': tf.io.VarLenFeature(tf.float32),
+        'atom-data': tf.io.VarLenFeature(tf.int64),
+        'peak-data': tf.io.VarLenFeature(tf.float32),
+        'mask-data': tf.io.VarLenFeature(tf.float32),
+        'name-data': tf.io.VarLenFeature(tf.int64),
+        'residue': tf.io.FixedLenFeature([1], tf.int64),
+        'indices': tf.io.FixedLenFeature([3], tf.int64)
+    }
     parsed_features = tf.io.parse_single_example(
         serialized=proto, features=features)
-    return (parsed_features['bond-data'],
-            parsed_features['atom-data'],
-            parsed_features['peak-data'],
-            parsed_features['mask-data'],
+    # convert our features from sparse to dense
+    atom_number = parsed_features['atom-number']
+    neighbor_number = parsed_features['neighbor-number']
+
+    bonds = tf.reshape(tf.sparse_tensor_to_dense(
+        parsed_features['bond-data'], default_value=0), (atom_number, neighbor_number, 3))
+
+    atoms = tf.sparse_tensor_to_dense(
+        parsed_features['atom-data'], default_value=0)
+    peaks = tf.sparse_tensor_to_dense(
+        parsed_features['peak-data'], default_value=0)
+    mask = tf.sparse_tensor_to_dense(
+        parsed_features['mask-data'], default_value=0)
+    names = tf.sparse_tensor_to_dense(
+        parsed_features['name-data'], default_value=0)
+
+    return (parsed_features['atom-number'],
+            parsed_features['neighbor-number'],
+            bonds,
+            atoms,
+            peaks,
+            mask,
+            names,
             parsed_features['name-data'],
             parsed_features['residue'],
             parsed_features['indices'])
@@ -143,12 +161,12 @@ def make_tfrecord(atom_data, mask_data, nlist, peak_data, residue, atom_names, w
     '''
     features = {}
     # nlist
-
-    assert atom_data.shape[0] == MAX_ATOM_NUMBER
-    assert mask_data.shape[0] == MAX_ATOM_NUMBER
-    assert nlist.shape[0] == MAX_ATOM_NUMBER and nlist.shape[1] == NEIGHBOR_NUMBER and nlist.shape[2] == 3
-    assert peak_data.shape[0] == MAX_ATOM_NUMBER
-    assert atom_names.shape[0] == MAX_ATOM_NUMBER
+    N = atom_data.shape[0]
+    NN = nlist.shape[1]
+    assert mask_data.shape[0] == N
+    assert nlist.shape[0] == N and nlist.shape[2] == 3
+    assert peak_data.shape[0] == N
+    assert atom_names.shape[0] == N
     assert len(indices) == 3
     if np.any(np.isnan(peak_data)):
         raise ValueError('Found nan in your data!')
@@ -157,6 +175,10 @@ def make_tfrecord(atom_data, mask_data, nlist, peak_data, residue, atom_names, w
         mask_data[np.isnan(peak_data)] = 0
     if np.any(np.abs(peak_data) > 10000):
         raise ValueError('Found very large peaks, |v| > 10000')
+    features['atom-number'] = tf.train.Feature(
+        int64_list=tf.train.Int64List(value=N))
+    features['neighbor-number'] = tf.train.Feature(
+        int64_list=tf.train.Int64List(value=NN))
     features['bond-data'] = tf.train.Feature(
         float_list=tf.train.FloatList(value=nlist.flatten()))
     features['atom-data'] = tf.train.Feature(
