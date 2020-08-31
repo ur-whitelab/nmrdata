@@ -2,5 +2,5 @@ import click
 
 
 @click.group()
-def nmrdata():
+def nmrparse():
     pass

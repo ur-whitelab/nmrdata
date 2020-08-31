@@ -7,6 +7,7 @@ from rdkit.Chem import AllChem
 import io
 import tqdm
 import sys
+from graphnmr import *
 
 def prepare_features(entry, embedding_dicts):
     N = len(entry['atoms'])

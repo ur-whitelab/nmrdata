@@ -24,7 +24,8 @@ setup(name='nmrdata',
       zip_safe=True,
       entry_points='''
         [console_scripts]
-        nmrdata=nmrdata.parse.main:nmrdata
+        parse=nmrdata.parse.main:parse
+        nmrdata=nmrdata.main:nmrdata
             ''',
       package_data={'nmrdata': ['data/*.pb']}
       )

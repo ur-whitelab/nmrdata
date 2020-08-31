@@ -2,6 +2,7 @@ import tensorflow as tf
 import pickle
 import os
 import numpy as np
+import click
 import pickle
 
 
@@ -9,45 +10,26 @@ MAX_ATOM_NUMBER = 256
 NEIGHBOR_NUMBER = 16
 
 
-def load_records(filename, batch_size=1):
+def load_records(filename, batchsize=1):
     data = tf.data.TFRecordDataset(
         filename, compression_type='GZIP').map(data_parse)
-    data = data.batch(batch_size)
-    iterator = tf.data.Iterator.from_structure(
-        data.output_types, data.output_shapes)
-    init_op = iterator.make_initializer(data)
-    bond_inputs, atom_inputs, peak_inputs, mask_inputs, name_inputs, class_input, record_index = iterator.get_next()
-    return init_op, {'features': atom_inputs,
-                     'nlist': bond_inputs,
-                     'peaks': peak_inputs,
-                     'mask': mask_inputs,
-                     'name': name_inputs,
-                     'class': class_input,
-                     'index': record_index}
+    data = data.batch(batchsize)
+    return data.map(data_parse_dict)
 
 
-def count_records(filename, batch_size=32):
-    '''Counts the number of records total in the filename
-    '''
-    tf.reset_default_graph()
-    init_data_op, data = load_records(filename, batch_size=batch_size)
-    count = 0
-
-    with tf.Session() as sess:
-        sess.run(init_data_op)
-        try:
-            while True:
-                _ = sess.run([data['name']])
-                count += batch_size
-                print('\rCounting records...{}'.format(count), end='')
-        except tf.errors.OutOfRangeError:
-            print('Dataset complete')
-            pass
-    return count
+def data_parse_dict(*record):
+    bond_inputs, atom_inputs, peak_inputs, mask_inputs, name_inputs, class_input, record_index = record
+    return {'features': atom_inputs,
+            'nlist': bond_inputs,
+            'peaks': peak_inputs,
+            'mask': mask_inputs,
+            'name': name_inputs,
+            'class': class_input,
+            'index': record_index}
 
 
-def nlist_tf_model(positions, NN, sorted=False):
-    M = tf.shape(positions)[0]
+def nlist_model(positions, NN, sorted=False):
+    M = tf.shape(input=positions)[0]
     # adjust NN
     NN = tf.minimum(NN, M)
     # Making 3 dim CG nlist
@@ -59,7 +41,7 @@ def nlist_tf_model(positions, NN, sorted=False):
     # subtract them to get distance matrix
     dist_mat = qTtile - qtile
     # mask distance matrix to remove things beyond cutoff and zeros
-    dist = tf.norm(dist_mat, axis=2)
+    dist = tf.norm(tensor=dist_mat, axis=2)
     mask = (dist >= 5e-4)
     mask_cast = tf.cast(mask, dtype=dist.dtype)
     dist_mat_r = dist * mask_cast + (1 - mask_cast) * 1000
@@ -108,26 +90,17 @@ def write_record_traj(positions, atom_data, mask_data,
     return snap
 
 
-def nlist_model(NN, sess):
-    # creates a function we call to build nlist for different position number
-    p = tf.placeholder(tf.float32, shape=[None, 3], name='positions')
-    nlist = nlist_tf_model(p, NN)
-
-    def compute(positions):
-        return sess.run(nlist, feed_dict={p: positions})
-    return compute
-
-
 def data_parse(proto):
-    features = {'bond-data': tf.FixedLenFeature([MAX_ATOM_NUMBER, NEIGHBOR_NUMBER, 3], tf.float32),
-                'atom-data': tf.FixedLenFeature([MAX_ATOM_NUMBER], tf.int64),
-                'peak-data': tf.FixedLenFeature([MAX_ATOM_NUMBER], tf.float32),
-                'mask-data': tf.FixedLenFeature([MAX_ATOM_NUMBER], tf.float32),
-                'name-data': tf.FixedLenFeature([MAX_ATOM_NUMBER], tf.int64),
-                'residue': tf.FixedLenFeature([1], tf.int64),
-                'indices': tf.FixedLenFeature([3], tf.int64)
+    features = {'bond-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER, NEIGHBOR_NUMBER, 3], tf.float32),
+                'atom-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER], tf.int64),
+                'peak-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER], tf.float32),
+                'mask-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER], tf.float32),
+                'name-data': tf.io.FixedLenFeature([MAX_ATOM_NUMBER], tf.int64),
+                'residue': tf.io.FixedLenFeature([1], tf.int64),
+                'indices': tf.io.FixedLenFeature([3], tf.int64)
                 }
-    parsed_features = tf.parse_single_example(proto, features)
+    parsed_features = tf.io.parse_single_example(
+        serialized=proto, features=features)
     return (parsed_features['bond-data'],
             parsed_features['atom-data'],
             parsed_features['peak-data'],
