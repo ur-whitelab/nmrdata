@@ -58,7 +58,7 @@ def count_records(tfrecords, batchsize=32):
 @click.option('--embeddings', default=None, help='Location to custom embeddings')
 @click.option('--batchsize', default=32, help='batch size')
 @click.option('--atom_filter', default=None, help='only look at this atom')
-def validate_peaks(tfrecords, embeddings, batchsize=32, atom_filter):
+def validate_peaks(tfrecords, embeddings, batchsize, atom_filter):
     '''Checks for peaks beyond in extreme ranges and reports them
     '''
     data = load_records(tfrecords, batchsize=batchsize)

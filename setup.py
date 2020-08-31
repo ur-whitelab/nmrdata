@@ -17,6 +17,7 @@ setup(name='nmrdata',
           'tensorflow == 2.3',
           'click',
           'numpy==1.18.5',
+          'MDAnalysis',
           'importlib_resources'],
       extras_require={
           'parse': ['pdbfixer @ https://github.com/openmm/pdbfixer/archive/master.zip', 'biopython', 'gsd']
@@ -24,7 +25,7 @@ setup(name='nmrdata',
       zip_safe=True,
       entry_points='''
         [console_scripts]
-        parse=nmrdata.parse.main:parse
+        nmrparse=nmrdata.parse.main:nmrparse
         nmrdata=nmrdata.main:nmrdata
             ''',
       package_data={'nmrdata': ['data/*.pb']}
