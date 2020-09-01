@@ -176,7 +176,7 @@ def process_pdb(path, corr_path, chain_id,
         # remake residue list each time so they have correct atom ids
         residues = list(
             filter(lambda r: r.chain.id[0] == chain_id, fixer.topology.residues()))
-        if num_atoms > 20000:
+        if num_atoms > 15000:
             MA_LOST_FRAGS += len(residues)
             if debug:
                 print('Exceeded number of atoms for building nlist (change this if you have big GPU memory) in frame {} in pdb {}'.format(fi, path))
@@ -199,7 +199,7 @@ def process_pdb(path, corr_path, chain_id,
             if debug:
                 print('pdb_offset', pdb_offset)
                 print('seq_offset', seq_offset)
-                print(sequence_map)
+                #print(sequence_map)
                 # now check alignment - rarely perfect
                 saw_one = False
                 aligned = 0
@@ -255,29 +255,29 @@ def process_pdb(path, corr_path, chain_id,
         rmap = dict()
         index = 0
         for ri, residue in enumerate(residues):
+            use_peaks = True
             # use the alignment result to get offset
             segid = int(residue.id) + pdb_offset
             if segid + seq_offset not in sequence_map:
                 if debug:
                     print('Could not find residue index', residue,
                           'in the sequence map. Its index is', segid + seq_offset)
-                success = False
-                break
-            peak_id = sequence_map[segid + seq_offset]
-            if peak_id >= len(peak_data):
-                success = False
-                if debug:
-                    print('peakd id is outside of peak range')
-                break
-            # check if things are aligned
-            if residue.name != peak_data[peak_id]['name']:
-                if debug:
-                    print('Mismatch between residue ', ri, peak_id, residue,
-                          segid, peak_data[peak_id], path, corr_path, chain_id)
-                success = False
-                break
+                use_peaks = False
+            else:
+                peak_id = sequence_map[segid + seq_offset]
+                if peak_id >= len(peak_data):
+                    if debug:
+                        print('peakd id is outside of peak range')
+                    use_peaks = False
+                else:
+                    # check if things are aligned
+                    if residue.name != peak_data[peak_id]['name']:
+                        if debug:
+                            print('Mismatch between residue ', ri, peak_id, residue,
+                                  segid, peak_data[peak_id], path, corr_path, chain_id)
+                        use_peaks = False
             for atom in residue.atoms():
-                mask[index] = 1.
+                mask[index] = 1. if use_peaks else 0.
                 atom_name = residue.name + '-' + atom.name
                 if atom_name not in embedding_dicts['name']:
                     embedding_dicts['name'][atom_name] = len(
@@ -374,12 +374,13 @@ def process_pdb(path, corr_path, chain_id,
 @click.argument('protein_dir')
 @click.argument('output_name')
 @click.option('--embeddings', default=None, help='path to custom embeddings file')
-@click.option('--shiftx', default=False, help='Are these the cleaned shiftx files?')
+@click.option('--shiftx/--no-shiftx', default=False, help='Are these the cleaned shiftx files?')
+@click.option('--debug/--no-debug', default=False)
 @click.option('--pdb_filter', default=None, help='file containing list of pdbs to exclude')
 @click.option('--invert_filter', default=False, help='Invert the pdb filter to only include the pdbs')
 @click.option('--neighbor-number', default=16, help='The model specific size of neighbor lists')
 @click.option('--gsd_frag_period', default=-1, help='How frequently to write GSD fragments')
-def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filter, invert_filter, gsd_frag_period, shiftx):
+def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filter, invert_filter, gsd_frag_period, shiftx, debug):
     # Optional filter to only consider certain pdbs
     pdb_filter_list = None
     if pdb_filter:
@@ -416,7 +417,7 @@ def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filte
                     continue
             try:
                 result, p, n, pc = process_pdb(os.path.join(protein_dir,entry['pdb_file']), os.path.join(protein_dir,entry['corr']), entry['chain'],
-                                               gsd_file=gsd_file,
+                                               gsd_file=gsd_file, debug=debug,
                                                embedding_dicts=embedding_dicts, neighbor_number=neighbor_number,
                                                model_index=index, log_file=rinfo, shiftx_style=shiftx)
                 pbar.set_description('Processed PDB {} ({}). Successes {} ({:.2}). Total Records: {}, Peaks: {}. Wrote frags: {}. Lost frags {}({})'.format(
