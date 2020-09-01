@@ -392,7 +392,7 @@ def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filte
     embedding_dicts = load_embeddings(embeddings)
 
     # load data info
-    with open(protein_dir + 'data.pb', 'rb') as f:
+    with open(os.path.join(protein_dir,'data.pb'), 'rb') as f:
         protein_data = pickle.load(f)
 
     items = list(protein_data.values())
@@ -415,7 +415,7 @@ def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filte
                 if pdb_filter_list is not None and entry['pdb_id'] in pdb_filter_list:
                     continue
             try:
-                result, p, n, pc = process_pdb(protein_dir + entry['pdb_file'], protein_dir + entry['corr'], entry['chain'],
+                result, p, n, pc = process_pdb(os.path.join(protein_dir,entry['pdb_file']), os.path.join(protein_dir,entry['corr']), entry['chain'],
                                                gsd_file=gsd_file,
                                                embedding_dicts=embedding_dicts, neighbor_number=neighbor_number,
                                                model_index=index, log_file=rinfo, shiftx_style=shiftx)
