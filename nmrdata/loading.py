@@ -6,16 +6,17 @@ import click
 import pickle
 
 
-def load_records(filename, batchsize=1):
+def load_records(filename):
     data = tf.data.TFRecordDataset(
         filename, compression_type='GZIP').map(data_parse)
-    data = data.batch(batchsize)
     return data.map(data_parse_dict)
 
 
 def data_parse_dict(*record):
-    bond_inputs, atom_inputs, peak_inputs, mask_inputs, name_inputs, class_input, record_index = record
-    return {'features': atom_inputs,
+    atom_number, neighbor_number, bond_inputs, atom_inputs, peak_inputs, mask_inputs, name_inputs, class_input, record_index = record
+    return {'natoms': atom_number,
+            'nneigh': neighbor_number,
+            'features': atom_inputs,
             'nlist': bond_inputs,
             'peaks': peak_inputs,
             'mask': mask_inputs,
@@ -103,17 +104,17 @@ def data_parse(proto):
     # convert our features from sparse to dense
     atom_number = parsed_features['atom-number']
     neighbor_number = parsed_features['neighbor-number']
-
-    bonds = tf.reshape(tf.sparse_tensor_to_dense(
+    print(parsed_features['bond-data'])
+    bonds = tf.reshape(tf.sparse.to_dense(
         parsed_features['bond-data'], default_value=0), (atom_number, neighbor_number, 3))
 
-    atoms = tf.sparse_tensor_to_dense(
+    atoms = tf.sparse.to_dense(
         parsed_features['atom-data'], default_value=0)
-    peaks = tf.sparse_tensor_to_dense(
+    peaks = tf.sparse.to_dense(
         parsed_features['peak-data'], default_value=0)
-    mask = tf.sparse_tensor_to_dense(
+    mask = tf.sparse.to_dense(
         parsed_features['mask-data'], default_value=0)
-    names = tf.sparse_tensor_to_dense(
+    names = tf.sparse.to_dense(
         parsed_features['name-data'], default_value=0)
 
     return (parsed_features['atom-number'],
@@ -123,7 +124,6 @@ def data_parse(proto):
             peaks,
             mask,
             names,
-            parsed_features['name-data'],
             parsed_features['residue'],
             parsed_features['indices'])
 
@@ -176,9 +176,9 @@ def make_tfrecord(atom_data, mask_data, nlist, peak_data, residue, atom_names, w
     if np.any(np.abs(peak_data) > 10000):
         raise ValueError('Found very large peaks, |v| > 10000')
     features['atom-number'] = tf.train.Feature(
-        int64_list=tf.train.Int64List(value=N))
+        int64_list=tf.train.Int64List(value=[N]))
     features['neighbor-number'] = tf.train.Feature(
-        int64_list=tf.train.Int64List(value=NN))
+        int64_list=tf.train.Int64List(value=[NN]))
     features['bond-data'] = tf.train.Feature(
         float_list=tf.train.FloatList(value=nlist.flatten()))
     features['atom-data'] = tf.train.Feature(

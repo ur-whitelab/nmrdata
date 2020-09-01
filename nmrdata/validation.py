@@ -40,14 +40,13 @@ class PeakSummary(tf.Module):
 
 @click.command()
 @click.argument('tfrecords')
-@click.option('--batchsize', default=32, help='batch size')
-def count_records(tfrecords, batchsize=32):
+def count_records(tfrecords):
     '''Counts the number of records total in the filename
     '''
-    data = load_records(tfrecords, batchsize=batchsize)
+    data = load_records(tfrecords)
     count = 0
-    for _ in data:
-        count += batchsize
+    for d in data:
+        count += 1
         print('\rCounting records...{}'.format(count), end='')
     print('Records', count)
     return count
@@ -56,12 +55,11 @@ def count_records(tfrecords, batchsize=32):
 @click.command()
 @click.argument('tfrecords')
 @click.option('--embeddings', default=None, help='Location to custom embeddings')
-@click.option('--batchsize', default=32, help='batch size')
 @click.option('--atom_filter', default=None, help='only look at this atom')
-def validate_peaks(tfrecords, embeddings, batchsize, atom_filter):
+def validate_peaks(tfrecords, embeddings, atom_filter):
     '''Checks for peaks beyond in extreme ranges and reports them
     '''
-    data = load_records(tfrecords, batchsize=batchsize)
+    data = load_records(tfrecords)
     embeddings = load_embeddings(embeddings)
     nbins = int(1e6)
     hist_range = [0, 1e6]
@@ -72,7 +70,7 @@ def validate_peaks(tfrecords, embeddings, batchsize, atom_filter):
         peaks_min, peaks_max, histogram, count = ps(
             d, embeddings, nbins, hist_range, atom_filter)
         i += count
-        records += batchsize
+        records += 1
         print('\rValidating Peaks...peaks: {} records: {} min: {} max: {}'.format(
             i, records, peaks_min.numpy(), peaks_max.numpy()), end='')
     print('\nSummary')
@@ -81,7 +79,7 @@ def validate_peaks(tfrecords, embeddings, batchsize, atom_filter):
         i, peaks_min.numpy(), peaks_max.numpy(), hist_range[1], histogram[-1]))
     step = nbins / (len(histogram) + 1)
     for i in range(len(histogram)):
-        if step * i > 20 and histogram[i] > 0:
+        if atom_filter == 'H' and step * i > 20 and histogram[i] > 0:
             print('Suspicious peaks @ {} (N = {})'.format(
                 step * i, histogram[i]))
     try:
@@ -96,18 +94,17 @@ def validate_peaks(tfrecords, embeddings, batchsize, atom_filter):
 @click.command()
 @click.argument('tfrecords')
 @click.option('--embeddings', default=None, help='Location to custom embeddings')
-@click.option('--batchsize', default=32, help='batch size')
-def validate_embeddings(tfrecords, embeddings, batchsize=32):
+def validate_embeddings(tfrecords, embeddings):
     '''Ensures that the records do not contain records not found in embeddings
     '''
     weights = 'weighted' in tfrecords
-    data = load_records(tfrecords, batchsize=batchsize)
+    data = load_records(tfrecords)
     embeddings = load_embeddings(embeddings)
     i = 0
     for d in data:
         tf.debugging.assert_less(tf.reduce_max(d['features']),
                                  tf.constant(max(list(embeddings['atom'].values())), dtype=tf.int64))
-        tf.debugging.assert_less(tf.reduce_max(tf.cast(d['nlist'][:, :, :, 2], tf.int32)),
+        tf.debugging.assert_less(tf.reduce_max(tf.cast(d['nlist'][:, :, 2], tf.int32)),
                                  tf.constant(max(list(embeddings['nlist'].values()))))
         if weights:
             tf.debugging.assert_less(tf.reduce_max(d['mask']),
@@ -120,11 +117,10 @@ def validate_embeddings(tfrecords, embeddings, batchsize=32):
 @click.command()
 @click.argument('tfrecords')
 @click.option('--embeddings', default=None, help='Location to custom embeddings')
-@click.option('--batchsize', default=32, help='batch size')
-def count_names(tfrecords, embeddings, batchsize=32):
+def count_names(tfrecords, embeddings):
     '''Counts the number of records for each name
     '''
-    data = load_records(tfrecords, batchsize=batchsize)
+    data = load_records(tfrecords)
     embeddings = load_embeddings(embeddings)
     name_counts = [0 for _ in range(len(embeddings['name']))]
 
@@ -146,8 +142,7 @@ def count_names(tfrecords, embeddings, batchsize=32):
 @click.argument('record_info')
 @click.argument('output')
 @click.option('--embeddings', default=None, help='Location to custom embeddings')
-@click.option('--batchsize', default=32, help='batch size')
-def write_peak_labels(tfrecords, embeddings, record_info, output, batchsize=32):
+def write_peak_labels(tfrecords, embeddings, record_info, output):
     '''Writes peak labels from records with embedding labels
     '''
 
@@ -163,7 +158,7 @@ def write_peak_labels(tfrecords, embeddings, record_info, output, batchsize=32):
     # look-ups for atom and res
     namedict = {v: k for k, v in embeddings['name'].items()}
 
-    data = load_records(tfrecords, batchsize=batchsize)
+    data = load_records(tfrecords)
 
     # Now write out data
     with open(output, 'w') as f:
@@ -184,8 +179,7 @@ def write_peak_labels(tfrecords, embeddings, record_info, output, batchsize=32):
 @click.argument('name_i')
 @click.argument('name_j')
 @click.option('--embeddings', default=None, help='Location to custom embeddings')
-@click.option('--batchsize', default=32, help='batch size')
-def find_pairs(tfrecords, embeddings, name_i, name_j, batchsize=32):
+def find_pairs(tfrecords, embeddings, name_i, name_j):
     '''Writes peak labels from records with embedding labels
     '''
 
@@ -193,7 +187,7 @@ def find_pairs(tfrecords, embeddings, name_i, name_j, batchsize=32):
     pi = embeddings['name'][name_i]
     pj = embeddings['name'][name_j]
 
-    full_data = load_records(tfrecords, batchsize=batchsize)
+    full_data = load_records(tfrecords)
     print(f'Finding pairs between {name_i}({pi}) and {name_j}({pj})')
 
     result = []
@@ -202,19 +196,19 @@ def find_pairs(tfrecords, embeddings, name_i, name_j, batchsize=32):
         mask, peaks, name, nlist = [data['mask'].numpy(
         ), data['peaks'].numpy(), data['name'].numpy(), data['nlist'].numpy()]
         indices = np.nonzero(mask)
-        for b, i in zip(indices[0], indices[1]):
+        for i in indices[0]:
             # find particle i
-            if name[b, i] != pi:
+            if name[i] != pi:
                 continue
-            p = peaks[b, i]
+            p = peaks[i]
             # get names on nlist
-            diff = (name[b, nlist[b, i, :, 1].astype(int)] - pj)**2
+            diff = (name[nlist[i, :, 1].astype(int)] - pj)**2
             if np.min(diff) == 0:
                 j = np.argmin(diff)
-                r = nlist[b, i, j, 0]
+                r = nlist[i, j, 0]
                 if r < 0.0001:
                     continue
-                result.append([r, p, peaks[b, j]])
+                result.append([r, p, peaks[j]])
                 count += 1
             print(
                 f'\rCounting pairs...{count} last={result[-1] if count > 0 else ...}', end='')
@@ -225,7 +219,7 @@ def find_pairs(tfrecords, embeddings, name_i, name_j, batchsize=32):
                header='distance i-shift j-shift')
 
 
-def duplicate_labels(tfrecords, embeddings, record_info, batchsize=32, atom_filter='H'):
+def duplicate_labels(tfrecords, embeddings, record_info, atom_filter='H'):
     '''Finds duplicate labels (same PDB) in record
     '''
 
@@ -240,32 +234,33 @@ def duplicate_labels(tfrecords, embeddings, record_info, batchsize=32, atom_filt
     resdict = {v: k for k, v in embeddings['class'].items()}
     namedict = {v: k for k, v in embeddings['name'].items()}
 
-    full_data = load_records(filename, batchsize=batchsize)
+    full_data = load_records(tfrecords)
+    all_labels = dict()
 
     # Now write out data
     for data in full_data:
         mask, peaks, name, c, index = [data['mask'].numpy(), data['peaks'].numpy(
         ), data['name'].numpy(), data['class'].numpy(), data['index'].numpy()]
         indices = np.nonzero(mask)
-        for b, i in zip(indices[0], indices[1]):
-            p = rinfo[index[b, 0]]  # protein
-            r = resdict[c[b, 0]]  # residue
-            n = namedict[name[b, i]]  # name
+        for i in indices[0]:
+            p = rinfo[index[0]]  # protein
+            r = resdict[c[0]]  # residue
+            n = namedict[name[i]]  # name
             # check if hydrogen
             if atom_filter is not None and n.split('-')[1][0] != atom_filter:
                 continue
-            key = '{}-{}{}-{}'.format(p, index[b, 2], r, n)
+            key = '{}-{}{}-{}'.format(p, index[2], r, n)
             if key in all_labels:
                 # check if it's same nmr file (index 0 matches)
                 present = False
                 for id, v in all_labels[key]:
-                    if id == index[b, 0]:
+                    if id == index[0]:
                         present = True
                         break
                 if not present:
-                    all_labels[key].append((index[b, 0], peaks[b, i]))
+                    all_labels[key].append((index[0], peaks[i]))
             else:
-                all_labels[key] = [(index[b, 0], peaks[b, i])]
+                all_labels[key] = [(index[0], peaks[i])]
         print('\rFinding Unique Shifts: {}'.format(
             len(all_labels)), end='')
     print('\nDataset complete')

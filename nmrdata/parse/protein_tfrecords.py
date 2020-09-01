@@ -247,7 +247,7 @@ def process_pdb(path, corr_path, chain_id,
         # :,:,0 -> distance
         # :,:,1 -> neighbor index
         # :,:,2 -> type
-        nlist = np.zeros((num_atoms, NEIGHBOR_NUMBER, 3), dtype=np.float)
+        nlist = np.zeros((num_atoms, neighbor_number, 3), dtype=np.float)
         positions = np.zeros((num_atoms, 3), dtype=np.float)
         peaks = np.zeros((num_atoms), dtype=np.float)
         names = np.zeros((num_atoms), dtype=np.int64)
@@ -264,7 +264,6 @@ def process_pdb(path, corr_path, chain_id,
                 success = False
                 break
             peak_id = sequence_map[segid + seq_offset]
-            # peak_id = segid
             if peak_id >= len(peak_data):
                 success = False
                 if debug:
@@ -303,14 +302,18 @@ def process_pdb(path, corr_path, chain_id,
                     else:
                         mask[index] = 0
                 index += 1
-            if not success:
-                break
+        if not success:
+            break
         # do this after so our reverse mapping is complete
         for residue in residues:
             for b in residue.bonds():
                 # set bonds
-                bonds[rmap[b.atom1.index], rmap[b.atom2.index]] = 1
-                bonds[rmap[b.atom2.index], rmap[b.atom1.index]] = 1
+                try:
+                    bonds[rmap[b.atom1.index], rmap[b.atom2.index]] = 1
+                    bonds[rmap[b.atom2.index], rmap[b.atom1.index]] = 1
+                except KeyError:
+                    # can be due to other chain bond or residue part of alignment.
+                    pass
         for residue in residues:
             for a in residue.atoms():
                 index = rmap[a.index]
@@ -321,7 +324,10 @@ def process_pdb(path, corr_path, chain_id,
                         # large distances are sentinels for things
                         # like self neighbors
                         continue
-                    j = rmap[int(frame_nlist[a.index, ni, 1])]
+                    try:
+                        j = rmap[int(frame_nlist[a.index, ni, 1])]
+                    except KeyError:
+                        continue
                     # a 0 -> non-bonded
                     if bonds[index, j] == 0:
                         # set index
@@ -345,7 +351,7 @@ def process_pdb(path, corr_path, chain_id,
                         nlist[index, n_index,
                               2] = embedding_dicts['nlist'][1]
                         n_index += 1
-                    if n_index == NEIGHBOR_NUMBER:
+                    if n_index == neighbor_number:
                         break
         if not success:
             if debug:
@@ -368,11 +374,12 @@ def process_pdb(path, corr_path, chain_id,
 @click.argument('protein_dir')
 @click.argument('output_name')
 @click.option('--embeddings', default=None, help='path to custom embeddings file')
+@click.option('--shiftx', default=False, help='Are these the cleaned shiftx files?')
 @click.option('--pdb_filter', default=None, help='file containing list of pdbs to exclude')
 @click.option('--invert_filter', default=False, help='Invert the pdb filter to only include the pdbs')
 @click.option('--neighbor-number', default=16, help='The model specific size of neighbor lists')
 @click.option('--gsd_frag_period', default=-1, help='How frequently to write GSD fragments')
-def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filter, invert_filter, gsd_frag_period):
+def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filter, invert_filter, gsd_frag_period, shiftx):
     # Optional filter to only consider certain pdbs
     pdb_filter_list = None
     if pdb_filter:
@@ -395,6 +402,7 @@ def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filte
     # config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
     with tf.io.TFRecordWriter(f'structure-{output_name}-data.tfrecord',
                               options=tf.io.TFRecordOptions(compression_type='GZIP')) as writer,\
+            gsd.hoomd.open(name='protein_frags.gsd', mode='wb') as gsd_file,\
             open('record_info.txt', 'w') as rinfo:
         pbar = tqdm.tqdm(items)
         rinfo.write(
@@ -408,9 +416,9 @@ def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filte
                     continue
             try:
                 result, p, n, pc = process_pdb(protein_dir + entry['pdb_file'], protein_dir + entry['corr'], entry['chain'],
-                                               gsd_file=None,
+                                               gsd_file=gsd_file,
                                                embedding_dicts=embedding_dicts, neighbor_number=neighbor_number,
-                                               model_index=index, log_file=rinfo)
+                                               model_index=index, log_file=rinfo, shiftx_style=shiftx)
                 pbar.set_description('Processed PDB {} ({}). Successes {} ({:.2}). Total Records: {}, Peaks: {}. Wrote frags: {}. Lost frags {}({})'.format(
                     entry['pdb_id'], entry['corr'], n, p, records, peaks, index % gsd_frag_period == 0, MA_LOST_FRAGS, MA_LOST_FRAGS / (MA_LOST_FRAGS + n + 1)))
                 # turned off for now
