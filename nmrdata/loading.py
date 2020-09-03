@@ -25,6 +25,7 @@ def data_parse_dict(*record):
             'index': record_index}
 
 
+@tf.function(experimental_compile=True)
 def nlist_model(positions, NN, sorted=False):
     M = tf.shape(input=positions)[0]
     # adjust NN
