@@ -7,7 +7,7 @@ exec(open('nmrdata/version.py').read())
 setup(name='nmrdata',
       version=__version__,
       scripts=glob(os.path.join('scripts', '*')),
-      description='Chemical shift predictor',
+      description='Chemical shift prediction dataset',
       author='Ziyue Yang, Andrew White',
       author_email='andrew.white@rochester.edu',
       url='http://thewhitelab.org/Software',
@@ -20,7 +20,7 @@ setup(name='nmrdata',
           'MDAnalysis',
           'importlib_resources'],
       extras_require={
-          'parse': ['pdbfixer @ https://github.com/openmm/pdbfixer/archive/master.zip', 'biopython', 'gsd']
+          'parse': ['pdbfixer@https://github.com/openmm/pdbfixer/archive/master.zip', 'biopython', 'gsd']
       },
       zip_safe=True,
       entry_points='''

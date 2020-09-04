@@ -129,20 +129,31 @@ def data_parse(proto):
             parsed_features['indices'])
 
 
-def create_datasets(filenames, skips, swap=False):
-    '''Swap is used if you want to plot the training data, instead of usual validation.
-    Returns (train, validation)
+def dataset(tfrecords, embeddings=None, short_records=True):
+    '''Create iterator over tfrecords
     '''
-    datasets = []
-    for f, s in zip(filenames, skips):
-        d = tf.data.TFRecordDataset(
-            [f], compression_type='GZIP').map(data_parse)
-        if swap:
-            datasets.append((d.take(s), d.skip(s)))
-        else:
-            datasets.append((d.skip(s), d.take(s)))
+    d = tf.data.TFRecordDataset(
+        tfrecords, compression_type='GZIP').map(data_parse)
+    if short_records:
+        d = d.map(lambda *x: data_shorten(*x, embeddings=embeddings))
+    return d
 
-    return datasets
+
+def data_shorten(*args, embeddings):
+    embeddings = load_embeddings(embeddings)
+    N = args[0]
+    NN = args[1]
+    nlist_full = args[2]
+    nodes = args[3]
+    labels = args[4]
+    mask = args[5]
+    edges = nlist_full[:, :, 0]
+    inv_degree = tf.squeeze(tf.math.divide_no_nan(1.,
+                                                  tf.reduce_sum(tf.cast(nlist_full[:, :, 0] > 0, tf.float32), axis=1)))
+    nlist = tf.cast(nlist_full[:, :, 1], tf.int32)
+    nodes = tf.one_hot(nodes, len(embeddings['atom']))
+
+    return (nodes, nlist, edges, inv_degree), labels, mask
 
 
 def make_tfrecord(atom_data, mask_data, nlist, peak_data, residue, atom_names, weights=None, indices=np.zeros((3, 1), dtype=np.int64)):
@@ -247,3 +258,13 @@ def load_embeddings(path=None):
 def save_embeddings(embeddings, path):
     with open(path, 'wb') as f:
         pickle.dump(embeddings, f)
+
+
+def load_standards():
+    from importlib_resources import files
+    import nmrdata.data
+    fp = files(nmrdata.data).joinpath(
+        'standards.pb')
+    with fp.open('rb') as f:
+        e = pickle.load(f)
+    return e
