@@ -129,17 +129,18 @@ def data_parse(proto):
             parsed_features['indices'])
 
 
-def dataset(tfrecords, embeddings=None, short_records=True):
+def dataset(tfrecords, embeddings=None, label_info=False, short_records=True):
     '''Create iterator over tfrecords
     '''
     d = tf.data.TFRecordDataset(
         tfrecords, compression_type='GZIP').map(data_parse)
     if short_records:
-        d = d.map(lambda *x: data_shorten(*x, embeddings=embeddings))
+        d = d.map(lambda *x: data_shorten(*x,
+                                          embeddings=embeddings, label_info=label_info))
     return d
 
 
-def data_shorten(*args, embeddings):
+def data_shorten(*args, embeddings, label_info=False):
     embeddings = load_embeddings(embeddings)
     N = args[0]
     NN = args[1]
@@ -147,11 +148,15 @@ def data_shorten(*args, embeddings):
     nodes = args[3]
     labels = args[4]
     mask = args[5]
+    names = args[6]
     edges = nlist_full[:, :, 0]
     inv_degree = tf.squeeze(tf.math.divide_no_nan(1.,
                                                   tf.reduce_sum(tf.cast(nlist_full[:, :, 0] > 0, tf.float32), axis=1)))
     nlist = tf.cast(nlist_full[:, :, 1], tf.int32)
     nodes = tf.one_hot(nodes, len(embeddings['atom']))
+
+    if label_info:
+        return (nodes, nlist, edges, inv_degree), (labels, names), mask
 
     return (nodes, nlist, edges, inv_degree), labels, mask
 
