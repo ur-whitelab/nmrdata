@@ -53,6 +53,8 @@ def pyparse_corr(path, shiftx_style):
 def process_corr(path, debug, shiftx_style):
 
     peaks = pyparse_corr(path, shiftx_style)
+    print(peaks)
+    exit()
 
     if len(peaks) == 0:
         raise ValueError('Could not parse file')
@@ -176,7 +178,7 @@ def process_pdb(path, corr_path, chain_id,
         # remake residue list each time so they have correct atom ids
         residues = list(
             filter(lambda r: r.chain.id[0] == chain_id, fixer.topology.residues()))
-        if num_atoms > 40000:
+        if num_atoms > 100000:
             MA_LOST_FRAGS += len(residues)
             if debug:
                 print('Exceeded number of atoms for building nlist (change this if you have big GPU memory) in frame {} in pdb {}'.format(fi, path))

@@ -69,6 +69,8 @@ def validate_peaks(tfrecords, embeddings, atom_filter):
     for d in data:
         peaks_min, peaks_max, histogram, count = ps(
             d, embeddings, nbins, hist_range, atom_filter)
+        if count == 0:
+            print(f'Found no peaks in record {records} !!')
         i += count
         records += 1
         print('\rValidating Peaks...peaks: {} records: {} min: {} max: {}'.format(

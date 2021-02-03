@@ -14,7 +14,7 @@ setup(name='nmrdata',
       license='MIT',
       packages=['nmrdata'],
       install_requires=[
-          'tensorflow == 2.3',
+          'tensorflow >= 2.3',
           'click',
           'numpy==1.18.5',
           'MDAnalysis',

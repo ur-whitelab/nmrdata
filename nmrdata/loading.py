@@ -156,8 +156,7 @@ def data_shorten(*args, embeddings, label_info=False):
     nodes = tf.one_hot(nodes, len(embeddings['atom']))
 
     if label_info:
-        return (nodes, nlist, edges, inv_degree), tf.stack([labels, tf.cast(names, labels.dtype)], axis=1), mask
-
+        return (nodes, nlist, edges, inv_degree), tf.stack([labels, tf.cast(names, labels.dtype), mask], axis=1), mask
     return (nodes, nlist, edges, inv_degree), labels, mask
 
 
