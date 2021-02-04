@@ -104,10 +104,11 @@ def validate_embeddings(tfrecords, embeddings):
     embeddings = load_embeddings(embeddings)
     i = 0
     for d in data:
+        # check that the features are examples from the embedding
         tf.debugging.assert_less(tf.reduce_max(d['features']),
-                                 tf.constant(max(list(embeddings['atom'].values())), dtype=tf.int64))
+                                 tf.constant(max(list(embeddings['atom'].values())) + 1, dtype=tf.int64))
         tf.debugging.assert_less(tf.reduce_max(tf.cast(d['nlist'][:, :, 2], tf.int32)),
-                                 tf.constant(max(list(embeddings['nlist'].values()))))
+                                 tf.constant(max(list(embeddings['nlist'].values())) + 1))
         if weights:
             tf.debugging.assert_less(tf.reduce_max(d['mask']),
                                      tf.constant(0.1))

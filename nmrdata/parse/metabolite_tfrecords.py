@@ -1,5 +1,4 @@
 import tensorflow as tf
-from graphnmr import *
 import numpy as np
 import pickle
 from rdkit import Chem
@@ -7,7 +6,7 @@ from rdkit.Chem import AllChem
 import io
 import tqdm
 import sys
-from graphnmr import *
+from nmrdata import *
 
 def prepare_features(entry, embedding_dicts):
     N = len(entry['atoms'])
@@ -20,11 +19,15 @@ def prepare_features(entry, embedding_dicts):
         if e != 'H':
             heavies += 1
         if e not in embedding_dicts['atom']:
+            print('HDFSAAAafas')
+            exit()
             embedding_dicts['atom'][e] = len(embedding_dicts['atom'])
         F[i] = embedding_dicts['atom'][e]
         atoms.append(e)
         atom_name = 'MB-' + e
         if atom_name not in embedding_dicts['name']:
+            print('HDFSAAAafas')
+            exit()
             embedding_dicts['name'][atom_name] = len(embedding_dicts['name'])
         names[i] = embedding_dicts['name'][atom_name]
     return F, heavies, atoms, names
@@ -62,13 +65,7 @@ def prepare_expconditions(entry, exp_dictionary):
         exp_dictionary[normalized_solvent] = len(exp_dictionary)
     return np.repeat(exp_dictionary[normalized_solvent], len(entry['atoms']))
 
-def padto(a, shape):
-    pad = tuple((0,shape[i] - a.shape[i]) for i in range(len(shape)))
-    if pad[0][1] < 0:
-        return None
-    return np.pad(a, pad, 'constant')
-
-def adj_to_nlist(atoms, A, nlist_model, embeddings):
+def adj_to_nlist(atoms, A, embeddings, neighbor_number):
     bonds = {1: Chem.rdchem.BondType.SINGLE,
             2: Chem.rdchem.BondType.DOUBLE,
             3: Chem.rdchem.BondType.TRIPLE}
@@ -101,12 +98,12 @@ def adj_to_nlist(atoms, A, nlist_model, embeddings):
         N = len(pos)
         np_pos = np.zeros( ( N, 3))
         np_pos[:N, :] = pos
-        pos_nlist = nlist_model(np_pos)
-        nlist = np.zeros( (MAX_ATOM_NUMBER, NEIGHBOR_NUMBER, 3) )
+        pos_nlist = nlist_model(np_pos.astype(np.float32), neighbor_number)
+        nlist = np.zeros( (N, neighbor_number, 3) )
 
         
         # compute bond distances
-        bonds = np.zeros( (MAX_ATOM_NUMBER,MAX_ATOM_NUMBER), dtype=np.int64)
+        bonds = np.zeros( (N,N), dtype=np.int64)
         # need to rebuild adjacency matrix with new atom ordering
         for b in mol.GetBonds():
             bonds[b.GetBeginAtomIdx(), b.GetEndAtomIdx()] = 1
@@ -128,8 +125,8 @@ def adj_to_nlist(atoms, A, nlist_model, embeddings):
                     # currently only single is used!
                     nlist[index,ni,2] = embeddings['nlist'][1]
         # pad out the nlist
-        for index in range(N, MAX_ATOM_NUMBER):
-            for ni in range(NEIGHBOR_NUMBER):
+        for index in range(N, N):
+            for ni in range(neighbor_number):
                 nlist[index, ni, 0] = 0
                 nlist[index, ni, 1] = 0
                 nlist[index, ni, 2] = embeddings['nlist']['none']
@@ -142,27 +139,23 @@ def adj_to_nlist(atoms, A, nlist_model, embeddings):
             exit()
         yield nlist
 
-DATA_DIR = sys.argv[1]
+@click.command()
+@click.argument('data_dir')
+@click.argument('output_name')
+@click.option('--embeddings', default=None, help='path to custom embeddings file')
+@click.option('--neighbor-number', default=16, help='The model specific size of neighbor lists')
+def parse_metabolites(data_dir, output_name, embeddings, neighbor_number):
 
-embeddings = load_embeddings('embeddings.pb')
+    embeddings = load_embeddings(embeddings)
+    with open(os.path.join(data_dir,'metabolite_data.pb'), 'rb') as f:
+        raw_data = pickle.load(f)
 
-with open(DATA_DIR + 'metabolite_data.pb', 'rb') as f:
-    raw_data = pickle.load(f)
-
-
-# turn off GPU for more memory
-config = tf.ConfigProto(
-        device_count = {'GPU': 0}
-    )
-#config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
-with tf.python_io.TFRecordWriter('train-structure-metabolite-data-{}-{}.tfrecord'.format(MAX_ATOM_NUMBER, NEIGHBOR_NUMBER),
-                                 options=tf.io.TFRecordCompressionType.GZIP) as writer:
-    with tf.Session(config=config) as sess:
-        nm = nlist_model(NEIGHBOR_NUMBER, sess)
+    with tf.io.TFRecordWriter(f'metabolite-{output_name}.tfrecord',
+                                     options=tf.io.TFRecordOptions(compression_type='GZIP')) as writer:
         successes = 0
         pbar = tqdm.tqdm(raw_data)
         for rd in pbar:
-            bond_data = padto(prepare_adj(rd), (MAX_ATOM_NUMBER, MAX_ATOM_NUMBER))
+            bond_data = prepare_adj(rd)
             if bond_data is None:
                 #bigger than max atom number
                 continue
@@ -170,18 +163,16 @@ with tf.python_io.TFRecordWriter('train-structure-metabolite-data-{}-{}.tfrecord
             class_label = 'MB'
             if class_label not in embeddings['class']:
                 embeddings['class'][class_label] = len(embeddings['class'])
-            atom_data = padto(atom_data, (MAX_ATOM_NUMBER,))
-            peak_data = padto(prepare_labels(rd), (MAX_ATOM_NUMBER, ))
-            name_data = padto(names, (MAX_ATOM_NUMBER,))
-            nucleus = rd['nucleus'][-1]
+            peak_data = prepare_labels(rd)
+            name_data = names
             mask_data = (peak_data != 0) * 1.0
             try:
-                for ci, nlist in enumerate(adj_to_nlist(atoms, bond_data, nm, embeddings)):
+                for ci, nlist in enumerate(adj_to_nlist(atoms, bond_data, embeddings, neighbor_number)):
                     pbar.set_description('{}:{}. Successes: {}'.format(class_label,ci, successes))
                     record = make_tfrecord(atom_data, mask_data, nlist, peak_data, embeddings['class'][class_label], name_data)
                     writer.write(record.SerializeToString())
             except ValueError as e:
                 continue
             successes += 1
-# I like my embeddings rn, so won't overwrite
-#save_embeddings(embeddings, 'embeddings.pb')
+
+
