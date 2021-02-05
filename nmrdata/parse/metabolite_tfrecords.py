@@ -19,15 +19,11 @@ def prepare_features(entry, embedding_dicts):
         if e != 'H':
             heavies += 1
         if e not in embedding_dicts['atom']:
-            print('HDFSAAAafas')
-            exit()
             embedding_dicts['atom'][e] = len(embedding_dicts['atom'])
         F[i] = embedding_dicts['atom'][e]
         atoms.append(e)
         atom_name = 'MB-' + e
         if atom_name not in embedding_dicts['name']:
-            print('HDFSAAAafas')
-            exit()
             embedding_dicts['name'][atom_name] = len(embedding_dicts['name'])
         names[i] = embedding_dicts['name'][atom_name]
     return F, heavies, atoms, names
@@ -96,9 +92,8 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
     for c in mol.GetConformers():
         pos = c.GetPositions()
         N = len(pos)
-        np_pos = np.zeros( ( N, 3))
-        np_pos[:N, :] = pos
-        pos_nlist = nlist_model(np_pos.astype(np.float32), neighbor_number)
+        np_pos = np.array(pos).reshape((N, 3)).astype(np.float32)
+        pos_nlist = nlist_model(np_pos, neighbor_number)
         nlist = np.zeros( (N, neighbor_number, 3) )
 
         
