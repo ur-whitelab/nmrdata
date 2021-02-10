@@ -105,7 +105,6 @@ def data_parse(proto):
     # convert our features from sparse to dense
     atom_number = parsed_features['atom-number']
     neighbor_number = parsed_features['neighbor-number']
-    print(parsed_features['bond-data'])
     bonds = tf.reshape(tf.sparse.to_dense(
         parsed_features['bond-data'], default_value=0), (atom_number, neighbor_number, 3))
 

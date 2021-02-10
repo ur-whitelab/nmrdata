@@ -15,8 +15,9 @@ class PeakSummary(tf.Module):
         if predict_atom is not None:
             mask *= tf.cast(tf.math.equal(
                 data['features'], embeddings['atom'][predict_atom]), tf.float32)
+        peaks = data['peaks'] * mask
         hist = tf.histogram_fixed_width(
-            data['peaks'] * mask, hist_range, nbins)
+            peaks, hist_range, nbins)
         # check for nans
         tf.debugging.check_numerics(
             data['peaks'], 'peaks invalid in {}'.format(data['index']))
@@ -30,8 +31,8 @@ class PeakSummary(tf.Module):
         self.running_hist.assign_add(hist)
 
         # print out range, suspicious values
-        peaks_min = tf.reduce_min(data['peaks'])
-        peaks_max = tf.reduce_max(data['peaks'])
+        peaks_min = tf.reduce_min(peaks)
+        peaks_max = tf.reduce_max(peaks)
         self.running_min.assign(tf.math.minimum(peaks_min, self.running_min))
         self.running_max.assign(tf.math.maximum(peaks_max, self.running_max))
         count = tf.reduce_sum(mask)
