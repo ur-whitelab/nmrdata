@@ -109,11 +109,38 @@ def validate_embeddings(tfrecords, embeddings):
                                  tf.constant(max(list(embeddings['atom'].values())) + 1, dtype=tf.int64))
         tf.debugging.assert_less(tf.reduce_max(tf.cast(d['nlist'][:, :, 2], tf.int32)),
                                  tf.constant(max(list(embeddings['nlist'].values())) + 1))
+        tf.debugging.assert_less(tf.reduce_max(tf.cast(d['name'], tf.int32)),
+                                 tf.constant(max(list(embeddings['name'].values())) + 1))
         if weights:
             tf.debugging.assert_less(tf.reduce_max(d['mask']),
                                      tf.constant(0.1))
         i += 1
         print('\rValidating Embeddings...{}'.format(i), end='')
+    print('\nValid')
+
+@click.command()
+@click.argument('tfrecords')
+@click.option('--embeddings', default=None, help='Location to custom embeddings')
+def validate_nlist(tfrecords, embeddings):
+    '''Writes peak labels from records with embedding labels
+    '''
+
+    embeddings = load_embeddings(embeddings)
+
+    full_data = load_records(tfrecords)
+    print(f'Validating Neighborlists...', end='')
+
+    count = 0
+    for data in full_data:
+        mask, peaks, name, nlist = [data['mask'].numpy(
+        ), data['peaks'].numpy(), data['name'].numpy(), data['nlist'].numpy()]
+        indices = np.nonzero(mask)
+        assert len(indices) > 0
+        for i in indices[0]:
+            assert np.sum(nlist[i, :, 2] != embeddings['nlist']['none']) > 0, 'empty neighbor lists'
+            assert np.sum((nlist[i, :, 2] == embeddings['nlist']['nonbonded']) * (nlist[i, :, 0] > 0.01)) > 0, 'neighbor lists distances are zero'
+        count += 1
+        print('\rValidating Neighborlists...{}'.format(count), end='')
     print('\nValid')
 
 

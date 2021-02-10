@@ -24,6 +24,7 @@ def prepare_features(entry, embedding_dicts):
         atoms.append(e)
         atom_name = 'MB-' + e
         if atom_name not in embedding_dicts['name']:
+            print('Adding new name')
             embedding_dicts['name'][atom_name] = len(embedding_dicts['name'])
         names[i] = embedding_dicts['name'][atom_name]
     return F, heavies, atoms, names
@@ -169,5 +170,6 @@ def parse_metabolites(data_dir, output_name, embeddings, neighbor_number):
             except ValueError as e:
                 continue
             successes += 1
-
+    save_embeddings(embeddings, 'final-embeddings.pb')
+        
 

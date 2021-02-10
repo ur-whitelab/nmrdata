@@ -48,6 +48,7 @@ def parse_xyz(ifile, embeddings):
             features[i] = embeddings['atom'][e]
             atom_name = 'DFT-' + e
             if atom_name not in embeddings['name']:
+                print('*******Adding new atom name*********')
                 embeddings['name'][atom_name] = len(embeddings['name'])
             atom_names[i] = embeddings['name'][atom_name]
             pos[i, :] = [float(s) for s in sline[1:4]]
@@ -78,5 +79,5 @@ def parse_shiftml(xyz_file, output_name, embeddings, neighbor_number):
             record = make_tfrecord(atom_data, mask_data, nlist, peaks, embeddings['class'][class_label], name_data)
             writer.write(record.SerializeToString())
             successes += 1
-
+    save_embeddings(embeddings, 'final-embeddings.pb')
 
