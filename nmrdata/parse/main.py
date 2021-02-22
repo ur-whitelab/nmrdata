@@ -2,6 +2,7 @@ import click
 from .protein_tfrecords import parse_refdb
 from .shiftml_tfrecords import parse_shiftml
 from .metabolite_tfrecords import parse_metabolites
+from .parse_universe import parse_universe
 
 
 @click.group()
