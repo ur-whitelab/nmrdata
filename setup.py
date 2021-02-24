@@ -16,7 +16,7 @@ setup(name='nmrdata',
       install_requires=[
           'tensorflow >= 2.3',
           'click',
-          'numpy==1.18.5',
+          'numpy>=1.18.5',
           'MDAnalysis',
           'importlib_resources'],
       extras_require={
