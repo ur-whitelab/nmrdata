@@ -1,6 +1,6 @@
 # Data for NMR GNN
 
-This contains the parsing scripts and data used for the NMR GNN model.
+This contains the parsing scripts and data used for our [GNN chemical shift predictor model](https://github.com/ur-whitelab/nmrgnn).
 
 ## Install
 
@@ -77,4 +77,17 @@ a list of `dict`s containing `pdb_file` (path to PDB), `pdb` (PDB ID), `corr` (p
 
 ```sh
 nmrparse parse-refdb directory name --pdb_filter exclude_ids.txt
+```
+## Citation
+
+Please cite [Predicting Chemical Shifts with Graph Neural Networks](https://doi.org/10.1101/2020.08.26.267971)
+
+```bibtex
+@article{yang2020predicting,
+  title     = {Predicting Chemical Shifts with Graph Neural Networks},
+  author    = {Yang, Ziyue and Chakraborty, Maghesree and White, Andrew D},
+  journal   = {bioRxiv},
+  year      = {2020},
+  publisher = {Cold Spring Harbor Laboratory}
+}
 ```
