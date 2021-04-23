@@ -1,4 +1,12 @@
 import click
+
+try:
+    import rdkit
+except ModuleNotFoundError:
+    raise ModuleNotFoundError(
+        'To use parsing, you must install rdkit and extra dependencies with pip install nmrdata[parse]')
+
+
 from .protein_tfrecords import parse_refdb
 from .shiftml_tfrecords import parse_shiftml
 from .metabolite_tfrecords import parse_metabolites
