@@ -24,7 +24,7 @@ def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False):
             dimensions = np.array(list(dimensions) + [90, 90, 90])
             u.atoms.wrap(box=dimensions)
             warnings.warn('Guessing the system dimensions are' + str(dimensions))
-    gridsearch = md.lib.nsgrid.FastNS(cutoff, u.atoms.positions, dimensions, max_gridsize=N**2 // 2, pbc=pbc)
+    gridsearch = md.lib.nsgrid.FastNS(cutoff, u.atoms.positions, dimensions, max_gridsize=min(5000, N**2 // 2), pbc=pbc)
     results = gridsearch.self_search()
     ragged_nlist = results.get_indices()
     ragged_edges = results.get_distances()
