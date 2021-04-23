@@ -170,6 +170,6 @@ def parse_metabolites(data_dir, output_name, embeddings, neighbor_number):
             except ValueError as e:
                 continue
             successes += 1
-    save_embeddings(embeddings, 'final-embeddings.pb')
+    save_embeddings(embeddings, 'new-embeddings.pb')
         
 
