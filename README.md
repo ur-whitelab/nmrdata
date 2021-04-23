@@ -45,10 +45,10 @@ Check that records are consistent with embeddings
 nmrdata validate-embeddings structure-test.tfrecords-data.tfrecord
 ```
 
-Check that records are consistent with embeddings
+Check that neighbor lists are consistent with embeddings
 
 ```sh
-nmrdata validate-embeddings structure-test.tfrecords-data.tfrecord
+nmrdata validate-nlist structure-test.tfrecords-data.tfrecord
 ```
 
 Check that peaks are reasonable (no nans, no extreme values, no bad masks)
@@ -59,13 +59,15 @@ nmrdata validate-peaks structure-test.tfrecords-data.tfrecord
 
 ### Output Lables
 
-To get extract labels ordered by PDB and residue:
+To extract labels ordered by PDB and residue:
 
 ```sh
 nmrdata write-peak-labels test-structure-shift-data.tfrecord  test-structure-shift-record-info.txt labels.txt
 ```
 
 ## Making New Data
+
+See commands `parse-shiftml`, `parse-metabolites`, `parse-shiftx` which are parsers for various databases. 
 
 ### From RefDB Files
 
