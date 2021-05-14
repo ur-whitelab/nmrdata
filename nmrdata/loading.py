@@ -276,6 +276,18 @@ def load_standards():
     return e
 
 
+def _oldstyle_mda(pairs, pair_distances, N):
+    '''Need to work around change in MDAnalysis neighbor lists. Unfortunate.'''
+    ragged_nlist = [[] for _ in range(N)]
+    ragged_edges = [[] for _ in range(N)]
+    for p, d in zip(pairs, pair_distances):
+        ragged_nlist[p[0]].append(p[1])
+        ragged_nlist[p[1]].append(p[0])
+        ragged_edges[p[0]].append(d)
+        ragged_edges[p[1]].append(d)
+    return ragged_nlist, ragged_edges
+
+
 def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False):
     '''Converts universe into atoms, edges, nlist
     '''
@@ -295,10 +307,10 @@ def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False):
             warnings.warn(
                 'Guessing the system dimensions are' + str(dimensions))
     gridsearch = md.lib.nsgrid.FastNS(
-        cutoff, u.atoms.positions, dimensions, max_gridsize=min(5000, N**2 // 2), pbc=pbc)
+        cutoff, u.atoms.positions, dimensions, pbc=pbc)
     results = gridsearch.self_search()
-    ragged_nlist = results.get_indices()
-    ragged_edges = results.get_distances()
+    ragged_nlist, ragged_edges = _oldstyle_mda(
+        results.get_pairs(), results.get_pair_distances(), N)
     nlist = np.zeros((N, neighbor_number), dtype=np.int32)
     edges = np.zeros((N, neighbor_number), dtype=np.float32)
     atoms = np.zeros(N, dtype=np.int32)
