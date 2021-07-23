@@ -9,6 +9,19 @@ git clone https://github.com/ur-whitelab/nmrdata && cd nmrdata
 pip install -e .
 ```
 
+## Numpy Error
+
+If you see this error:
+
+```py
+ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject
+```
+
+Try re-install numpy
+```sh
+python -m pip uninstall -y numpy && pip install numpy
+```
+
 ## Parsing Scripts
 To install with the parsing functionality, use this
 
@@ -19,11 +32,11 @@ pip install -e .[parse]
 
 ## Working with Data
 
-All commands below can have additional information printed using the `--help` argument. 
+All commands below can have additional information printed using the `--help` argument.
 
 ### Find pairs
 
-Find pairs of atoms with chemical shifts that are neighbors and sort them based on distance. 
+Find pairs of atoms with chemical shifts that are neighbors and sort them based on distance.
 
 ```sh
 nmrdata find-pairs structure-test.tfrecords-data.tfrecord ALA-H ALA-N
@@ -67,13 +80,13 @@ nmrdata write-peak-labels test-structure-shift-data.tfrecord  test-structure-shi
 
 ## Making New Data
 
-See commands `parse-shiftml`, `parse-metabolites`, `parse-shiftx` which are parsers for various databases. 
+See commands `parse-shiftml`, `parse-metabolites`, `parse-shiftx` which are parsers for various databases.
 
 ### From RefDB Files
 
 This requires a pickled python object called `data.pb` to be in the directory. It is
-a list of `dict`s containing `pdb_file` (path to PDB), `pdb` (PDB ID), `corr` (path to `.corr` file), and `chain` (which chain). 
-`chain` can be `_` to indicate use first chain. 
+a list of `dict`s containing `pdb_file` (path to PDB), `pdb` (PDB ID), `corr` (path to `.corr` file), and `chain` (which chain).
+`chain` can be `_` to indicate use first chain.
 
 ```sh
 nmrparse parse-refdb directory name --pdb_filter exclude_ids.txt
