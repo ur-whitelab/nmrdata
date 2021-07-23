@@ -1,12 +1,17 @@
 import tensorflow as tf
 import numpy as np
 import pickle
-from rdkit import Chem
-from rdkit.Chem import AllChem
+try:
+    from rdkit import Chem
+    from rdkit.Chem import AllChem
+except ImportError:
+    # TODO think smarter about this
+    pass
 import io
 import tqdm
 import sys
 from nmrdata import *
+
 
 def prepare_features(entry, embedding_dicts):
     N = len(entry['atoms'])
@@ -38,23 +43,25 @@ def prepare_labels(entry):
             if 'a{}'.format(i+1) in p['atoms']['@atomRefs'].split():
                 if type(p['peakList']['peak']) == list:
                     #print('duplicate peaks', *[x['@center'] for x in p['peakList']['peak']])
-                    #print(p)
+                    # print(p)
                     L[i] = p['peakList']['peak'][0]['@center']
                 else:
                     L[i] = p['peakList']['peak']['@center']
     return L
 
+
 def prepare_adj(entry):
     N = len(entry['atoms'])
-    A = np.zeros((N,N), dtype=np.int32)
+    A = np.zeros((N, N), dtype=np.int32)
     for b in entry['bonds']:
-        i,j = [int(s[1:]) - 1 for s in b['@atomRefs'].split()]
+        i, j = [int(s[1:]) - 1 for s in b['@atomRefs'].split()]
         A[i, j] = int(b['@order'])
-        A[j, i] = A[i,j]
-    #add self loops
-    #for i in range(N):
+        A[j, i] = A[i, j]
+    # add self loops
+    # for i in range(N):
         #A[i,i] = bond_dictionary['self']
     return A
+
 
 def prepare_expconditions(entry, exp_dictionary):
     normalized_solvent = entry['solvent'].lower()
@@ -62,17 +69,18 @@ def prepare_expconditions(entry, exp_dictionary):
         exp_dictionary[normalized_solvent] = len(exp_dictionary)
     return np.repeat(exp_dictionary[normalized_solvent], len(entry['atoms']))
 
+
 def adj_to_nlist(atoms, A, embeddings, neighbor_number):
     bonds = {1: Chem.rdchem.BondType.SINGLE,
-            2: Chem.rdchem.BondType.DOUBLE,
-            3: Chem.rdchem.BondType.TRIPLE}
+             2: Chem.rdchem.BondType.DOUBLE,
+             3: Chem.rdchem.BondType.TRIPLE}
     m = Chem.EditableMol(Chem.Mol())
     for a in atoms:
         m.AddAtom(Chem.Atom(a))
     for i in range(len(atoms)):
         for j in range(i, len(atoms)):
-            if A[i,j] > 0:
-                m.AddBond(i, j, bonds[A[i,j]])
+            if A[i, j] > 0:
+                m.AddBond(i, j, bonds[A[i, j]])
     mol = m.GetMol()
     try:
         AllChem.EmbedMolecule(mol)
@@ -86,7 +94,7 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
             if r == -1:
                 raise ValueError()
         '''
-    except (ValueError,RuntimeError) as e:
+    except (ValueError, RuntimeError) as e:
         print('Unable to process')
         print(Chem.MolToSmiles(mol))
         raise e
@@ -95,11 +103,10 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
         N = len(pos)
         np_pos = np.array(pos).reshape((N, 3)).astype(np.float32)
         pos_nlist = nlist_model(np_pos, neighbor_number)
-        nlist = np.zeros( (N, neighbor_number, 3) )
+        nlist = np.zeros((N, neighbor_number, 3))
 
-        
         # compute bond distances
-        bonds = np.zeros( (N,N), dtype=np.int64)
+        bonds = np.zeros((N, N), dtype=np.int64)
         # need to rebuild adjacency matrix with new atom ordering
         for b in mol.GetBonds():
             bonds[b.GetBeginAtomIdx(), b.GetEndAtomIdx()] = 1
@@ -108,7 +115,8 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
         # a 0 -> non-bonded
         for index in range(N):
             for ni in range(len(pos_nlist[index])):
-                if pos_nlist[index, ni, 0] >= 100: # this is a large distance sentinel indicating not part of nlist
+                # this is a large distance sentinel indicating not part of nlist
+                if pos_nlist[index, ni, 0] >= 100:
                     continue
                 j = int(pos_nlist[index, ni, 1])
                 # / 10 to get to nm
@@ -116,10 +124,10 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
                 nlist[index, ni, 1] = j
                 # a 0 -> non-bonded
                 if bonds[index, ni] == 0:
-                    nlist[index,ni,2] = embeddings['nlist']['nonbonded']
+                    nlist[index, ni, 2] = embeddings['nlist']['nonbonded']
                 else:
                     # currently only single is used!
-                    nlist[index,ni,2] = embeddings['nlist'][1]
+                    nlist[index, ni, 2] = embeddings['nlist'][1]
         # pad out the nlist
         for index in range(N, N):
             for ni in range(neighbor_number):
@@ -135,6 +143,7 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
             exit()
         yield nlist
 
+
 @click.command()
 @click.argument('data_dir')
 @click.argument('output_name')
@@ -143,17 +152,17 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
 def parse_metabolites(data_dir, output_name, embeddings, neighbor_number):
 
     embeddings = load_embeddings(embeddings)
-    with open(os.path.join(data_dir,'metabolite_data.pb'), 'rb') as f:
+    with open(os.path.join(data_dir, 'metabolite_data.pb'), 'rb') as f:
         raw_data = pickle.load(f)
 
     with tf.io.TFRecordWriter(f'metabolite-{output_name}.tfrecord',
-                                     options=tf.io.TFRecordOptions(compression_type='GZIP')) as writer:
+                              options=tf.io.TFRecordOptions(compression_type='GZIP')) as writer:
         successes = 0
         pbar = tqdm.tqdm(raw_data)
         for rd in pbar:
             bond_data = prepare_adj(rd)
             if bond_data is None:
-                #bigger than max atom number
+                # bigger than max atom number
                 continue
             atom_data, heavies, atoms, names = prepare_features(rd, embeddings)
             class_label = 'MB'
@@ -164,12 +173,12 @@ def parse_metabolites(data_dir, output_name, embeddings, neighbor_number):
             mask_data = (peak_data != 0) * 1.0
             try:
                 for ci, nlist in enumerate(adj_to_nlist(atoms, bond_data, embeddings, neighbor_number)):
-                    pbar.set_description('{}:{}. Successes: {}'.format(class_label,ci, successes))
-                    record = make_tfrecord(atom_data, mask_data, nlist, peak_data, embeddings['class'][class_label], name_data)
+                    pbar.set_description('{}:{}. Successes: {}'.format(
+                        class_label, ci, successes))
+                    record = make_tfrecord(
+                        atom_data, mask_data, nlist, peak_data, embeddings['class'][class_label], name_data)
                     writer.write(record.SerializeToString())
             except ValueError as e:
                 continue
             successes += 1
     save_embeddings(embeddings, 'new-embeddings.pb')
-        
-

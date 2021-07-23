@@ -12,7 +12,7 @@ setup(name='nmrdata',
       author_email='andrew.white@rochester.edu',
       url='http://thewhitelab.org/Software',
       license='MIT',
-      packages=['nmrdata', 'nmrdata.data'],
+      packages=['nmrdata', 'nmrdata.data', 'nmrdata.parse'],
       install_requires=[
           'tensorflow >= 2.3',
           'click',

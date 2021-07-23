@@ -1,21 +1,21 @@
 import click
 
 try:
-    import rdkit
+    import pdbfixer
 except ModuleNotFoundError:
     raise ModuleNotFoundError(
-        'To use parsing, you must install rdkit and extra dependencies with pip install nmrdata[parse]')
+        'To use parsing, you must install openmm and extra dependencies with pip install nmrdata[parse]')
 
 
 from .protein_tfrecords import parse_refdb
 from .shiftml_tfrecords import parse_shiftml
 from .metabolite_tfrecords import parse_metabolites
-from .parse_universe import parse_universe
 
 
 @click.group()
 def nmrparse():
     pass
+
 
 @click.command()
 @click.argument('input_pdb')
@@ -38,6 +38,7 @@ def clean_pdb(input_pdb, output_pdb):
     fixer.addMissingAtoms()
     fixer.addMissingHydrogens(7.0)
     PDBFile.writeFile(fixer.topology, fixer.positions, open(output_pdb, 'w'))
+
 
 nmrparse.add_command(parse_refdb)
 nmrparse.add_command(parse_metabolites)
