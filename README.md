@@ -93,14 +93,14 @@ nmrparse parse-refdb directory name --pdb_filter exclude_ids.txt
 ```
 ## Citation
 
-Please cite [Predicting Chemical Shifts with Graph Neural Networks](https://doi.org/10.1101/2020.08.26.267971)
+Please cite [Predicting Chemical Shifts with Graph Neural Networks](https://pubs.rsc.org/en/content/articlehtml/2021/sc/d1sc01895g)
 
 ```bibtex
-@article{yang2020predicting,
-  title     = {Predicting Chemical Shifts with Graph Neural Networks},
-  author    = {Yang, Ziyue and Chakraborty, Maghesree and White, Andrew D},
-  journal   = {bioRxiv},
-  year      = {2020},
-  publisher = {Cold Spring Harbor Laboratory}
+@article{yang2021predicting,
+  title={Predicting Chemical Shifts with Graph Neural Networks},
+  author={Yang, Ziyue and Chakraborty, Maghesree and White, Andrew D},
+  journal={Chemical Science},
+  year={2021},
+  publisher={Royal Society of Chemistry}
 }
 ```
