@@ -5,8 +5,7 @@ This contains the parsing scripts and data used for our [GNN chemical shift pred
 ## Install
 
 ```sh
-git clone https://github.com/ur-whitelab/nmrdata && cd nmrdata
-pip install -e .
+pip install nmrdata@git+git://github.com/ur-whitelab/nmrdata.git
 ```
 
 ## Numpy Error
@@ -19,7 +18,7 @@ ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Exp
 
 Try re-install numpy
 ```sh
-python -m pip uninstall -y numpy && pip install numpy
+pip uninstall -y numpy && pip install numpy
 ```
 
 ## Parsing Scripts
