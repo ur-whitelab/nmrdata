@@ -4,13 +4,16 @@ from setuptools import setup
 
 exec(open('nmrdata/version.py').read())
 
-setup(name='nmrdata',
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
+setup(name='nmrgnn-data',
       version=__version__,
       scripts=glob(os.path.join('scripts', '*')),
       description='Chemical shift prediction dataset',
       author='Ziyue Yang, Andrew White',
       author_email='andrew.white@rochester.edu',
-      url='http://thewhitelab.org/Software',
+      url='https://github.com/ur-whitelab/nmrdata',
       license='MIT',
       packages=['nmrdata', 'nmrdata.data', 'nmrdata.parse'],
       install_requires=[
@@ -28,5 +31,14 @@ setup(name='nmrdata',
         nmrparse=nmrdata.parse.main:nmrparse
         nmrdata=nmrdata.main:nmrdata
             ''',
-      package_data={'nmrdata': ['data/*.pb']}
+      package_data={'nmrdata': ['data/*.pb']},
+      long_description=long_description,
+      long_description_content_type="text/markdown",
+      classifiers=[
+          "Programming Language :: Python :: 3",
+          "License :: OSI Approved :: MIT License",
+          "Operating System :: OS Independent",
+          "Topic :: Scientific/Engineering :: Bio-Informatics",
+          "Topic :: Scientific/Engineering :: Artificial Intelligence"
+      ]
       )

@@ -335,8 +335,9 @@ def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False, warn=
         try:
             atoms[i] = embeddings['atom'][elements[i]]
         except KeyError as e:
-            print('Unparameterized element' +
-                  elements[i] + 'will replace with unknown atom')
+            if warn:
+                print('Unparameterized element <' +
+                      elements[i] + '> will replace with unknown atom')
             atoms[i] = 1
             embeddings['name'][elements[i]] = len(embeddings['name'])
             new_embeddings = True
@@ -347,6 +348,6 @@ def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False, warn=
         if not os.path.exists(nef):
             print('Writing modified emebddings as new_embeddings')
             save_embeddings(embeddings, 'new-embeddings.pb')
-        else:
+        elif warn:
             print('Will not write modified embeddings because file exists')
     return tf.one_hot(atoms, len(embeddings['atom'])), edges, nlist
