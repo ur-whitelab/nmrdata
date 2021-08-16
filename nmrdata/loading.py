@@ -288,7 +288,7 @@ def _oldstyle_mda(pairs, pair_distances, N):
     return ragged_nlist, ragged_edges
 
 
-def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False):
+def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False, warn=True):
     '''Converts universe into atoms, edges, nlist
     '''
     N = u.atoms.positions.shape[0]
@@ -304,8 +304,9 @@ def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False):
             # make it into proper dimensions
             dimensions = np.array(list(dimensions) + [90, 90, 90])
             u.atoms.wrap(box=dimensions)
-            warnings.warn(
-                'Guessing the system dimensions are' + str(dimensions))
+            if warn:
+                warnings.warn(
+                    'Guessing the system dimensions are' + str(dimensions))
     gridsearch = md.lib.nsgrid.FastNS(
         cutoff, u.atoms.positions, dimensions, pbc=pbc)
     results = gridsearch.self_search()
@@ -318,7 +319,8 @@ def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False):
     try:
         elements = u.atoms.elements
     except md.exceptions.NoDataError as e:
-        warnings.warn('Trying to guess elements from names')
+        if warn:
+            warnings.warn('Trying to guess elements from names')
         elements = []
         for i in range(N):
             # find first non-digit character
