@@ -5,7 +5,7 @@ This contains the parsing scripts and data used for our [GNN chemical shift pred
 ## Install
 
 ```sh
-pip install nmrdata@git+git://github.com/ur-whitelab/nmrdata.git
+pip install nmrgnn-data
 ```
 
 ## Numpy Error
