@@ -23,7 +23,7 @@ setup(name='nmrgnn-data',
           'MDAnalysis >= 1.1.1',
           'importlib_resources'],
       extras_require={
-          'parse': ['pdbfixer@https://github.com/openmm/pdbfixer/archive/master.zip', 'biopython', 'gsd']
+          'parse': ['pdbfixer', 'biopython', 'gsd']
       },
       zip_safe=True,
       entry_points='''
