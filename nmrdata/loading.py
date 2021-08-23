@@ -288,10 +288,13 @@ def _oldstyle_mda(pairs, pair_distances, N):
     return ragged_nlist, ragged_edges
 
 
-def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=False, warn=True):
+def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=None, warn=True):
     '''Converts universe into atoms, edges, nlist
     '''
     N = u.atoms.positions.shape[0]
+    if pbc is None:
+        pbc = sum(u.dimensions**2) > 0
+        warnings.warn(f'Gussing system is{"" if pbc else " not"} pbc')
     new_embeddings = False
     dimensions = u.dimensions
     if cutoff is None:
