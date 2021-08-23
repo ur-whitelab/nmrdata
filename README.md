@@ -5,7 +5,7 @@ This contains the parsing scripts and data used for our [GNN chemical shift pred
 ## Install
 
 ```sh
-pip install nmrdata@git+git://github.com/ur-whitelab/nmrdata.git
+pip install nmrgnn-data
 ```
 
 ## Numpy Error
@@ -26,7 +26,7 @@ To install with the parsing functionality, use this
 
 ```sh
 conda install -c omnia -c conda-forge rdkit openmm numpy==1.18.5
-pip install -e .[parse]
+pip install nmrgnn-data[parse]
 ```
 
 ## Working with Data
