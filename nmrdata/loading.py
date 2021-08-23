@@ -293,7 +293,7 @@ def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=None, warn=T
     '''
     N = u.atoms.positions.shape[0]
     if pbc is None:
-        pbc = sum(u.dimensions**2) > 0
+        pbc = False if u.dimensions is None else sum(u.dimensions**2) > 0
         warnings.warn(f'Gussing system is{"" if pbc else " not"} pbc')
     new_embeddings = False
     dimensions = u.dimensions
