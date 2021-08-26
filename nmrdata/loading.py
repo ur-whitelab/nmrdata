@@ -293,13 +293,15 @@ def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=None, warn=T
     '''
     N = u.atoms.positions.shape[0]
     if pbc is None:
-        pbc = False if u.dimensions is None else sum(u.dimensions**2) > 0
+        # just guess
+        pbc = u.dimensions is not None
         warnings.warn(f'Gussing system is{"" if pbc else " not"} pbc')
     new_embeddings = False
     dimensions = u.dimensions
     if cutoff is None:
-        cutoff = min(dimensions) / 2.01
-        if cutoff == 0:
+        if dimensions is not None:
+            cutoff = min(dimensions) / 2.01
+        else:
             # no box defined
             bbox = u.atoms.bbox()
             dimensions = bbox[1] - bbox[0]
