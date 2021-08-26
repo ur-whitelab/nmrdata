@@ -20,7 +20,7 @@ setup(name='nmrgnn-data',
           'tensorflow >= 2.3',
           'click',
           'numpy>=1.18.5',
-          'MDAnalysis >= 1.1.1',
+          'MDAnalysis ~= 2.0',
           'importlib_resources'],
       extras_require={
           'parse': ['pdbfixer', 'biopython', 'gsd']
