@@ -323,7 +323,14 @@ def parse_universe(u, neighbor_number, embeddings, cutoff=None, pbc=None, warn=T
     # check for elements
     try:
         elements = u.atoms.elements
+        for e in elements:
+            if e == '':
+                elements = None
+                break
     except md.exceptions.NoDataError as e:
+        elements = None
+
+    if elements is None:
         if warn:
             warnings.warn('Trying to guess elements from names')
         elements = []
