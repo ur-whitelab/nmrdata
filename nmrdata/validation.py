@@ -197,11 +197,11 @@ def write_peak_labels(tfrecords, embeddings, record_info, output):
             mask, peaks, name, index = [
                 d['mask'], d['peaks'], d['name'], d['index']]
             indices = np.nonzero(mask)
-            for b, i in zip(indices[0], indices[1]):
-                p = rinfo[index[b, 0].numpy()]
-                n = namedict[name[b, i].numpy()]
+            for i in indices[0]:
+                p = rinfo[index[0].numpy()]
+                n = namedict[name[i].numpy()]
                 f.write(
-                    ' '.join([p, str(index[b, 2].numpy()), *n.split('-'), str(peaks[b, i].numpy()), '\n']))
+                    ' '.join([p, str(index[2].numpy()), *n.split('-'), str(peaks[i].numpy()), '\n']))
     return
 
 
