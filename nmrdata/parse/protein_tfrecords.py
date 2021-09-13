@@ -253,6 +253,7 @@ def process_pdb(path, corr_path, chain_id,
         positions = np.zeros((num_atoms, 3), dtype=np.float)
         peaks = np.zeros((num_atoms), dtype=np.float)
         names = np.zeros((num_atoms), dtype=np.int64)
+        resids = np.empty((num_atoms), dtype=np.int64)
         # going from pdb atom index to index in these data structures
         rmap = dict()
         index = 0
@@ -296,6 +297,7 @@ def process_pdb(path, corr_path, chain_id,
                 positions[index] = np_pos[atom.index, :]
                 rmap[atom.index] = index
                 peaks[index] = 0
+                resids[index] = int(residue.id)
                 if mask[index]:
                     if atom.name[:3] in peak_data[peak_id]:
                         peaks[index] = peak_data[peak_id][atom.name[:3]]
@@ -364,8 +366,11 @@ def process_pdb(path, corr_path, chain_id,
                                          embedding_dicts['class'][residues[ri].name], names, embedding_dicts)
             snapshot.configuration.step = len(gsd_file)
             gsd_file.append(snapshot)
-        result.append(make_tfrecord(atoms, mask, nlist, peaks, embedding_dicts['class'][residues[ri].name], names, indices=np.array(
-            [model_index, fi, int(residues[ri].id)], dtype=np.int64)))
+            record_idx = np.empty((num_atoms, 3), dtype=int)
+            record_idx[:, 0] = model_index
+            record_idx[:, 1] = fi
+            record_idx[:, 2] = resids
+        result.append(make_tfrecord(atoms, mask, nlist, peaks, embedding_dicts['class'][residues[ri].name], names, indices=record_idx))
         if log_file is not None:
             log_file.write('{} {} {} {} {} {} {} {}\n'.format(path.split('/')[-1], corr_path.split(
                 '/')[-1], chain_id, len(peak_successes), len(gsd_file), model_index, fi, residues[ri].id))

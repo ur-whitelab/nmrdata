@@ -162,7 +162,7 @@ def data_shorten(*args, embeddings, label_info=False):
     return (nodes, nlist, edges, inv_degree), labels, mask
 
 
-def make_tfrecord(atom_data, mask_data, nlist, peak_data, residue, atom_names, weights=None, indices=np.zeros((3, 1), dtype=np.int64)):
+def make_tfrecord(atom_data, mask_data, nlist, peak_data, residue, atom_names, weights=None, indices=None):
     '''
     Write out the TF record.
 
@@ -175,9 +175,11 @@ def make_tfrecord(atom_data, mask_data, nlist, peak_data, residue, atom_names, w
       peak_data - N containing peak data for training (0 for prediction)
       residue     - N ints indicating the residue of the atom (for validation)
       atom_names  - N ints indicating the name of the atom  (for validation)
-      indices       - 3 ints indices to attach to record (for validation)
+      indices       - N x 3 ints indices to attach to record (for validation)
     '''
     features = {}
+    if indices is None:
+        indices = np.zeros(N, 3)        
     # nlist
     N = atom_data.shape[0]
     NN = nlist.shape[1]
@@ -185,7 +187,7 @@ def make_tfrecord(atom_data, mask_data, nlist, peak_data, residue, atom_names, w
     assert nlist.shape[0] == N and nlist.shape[2] == 3
     assert peak_data.shape[0] == N
     assert atom_names.shape[0] == N
-    assert len(indices) == 3
+    assert indices.shape == (N,3)
     if np.any(np.isnan(peak_data)):
         raise ValueError('Found nan in your data!')
         # Use code below if you do not care about nans
