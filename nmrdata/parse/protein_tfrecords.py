@@ -53,8 +53,8 @@ def pyparse_corr(path, shiftx_style):
 def process_corr(path, debug, shiftx_style):
 
     peaks = pyparse_corr(path, shiftx_style)
-    print(peaks)
-    exit()
+    #print(peaks)
+    #exit()
 
     if len(peaks) == 0:
         raise ValueError('Could not parse file')

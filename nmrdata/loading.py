@@ -101,7 +101,7 @@ def data_parse(proto):
         'mask-data': tf.io.VarLenFeature(tf.float32),
         'name-data': tf.io.VarLenFeature(tf.int64),
         'residue': tf.io.FixedLenFeature([1], tf.int64),
-        'indices': tf.io.FixedLenFeature([3], tf.int64)
+        'indices': tf.io.VarLenFeature(tf.int64)
     }
     parsed_features = tf.io.parse_single_example(
         serialized=proto, features=features)
@@ -119,6 +119,7 @@ def data_parse(proto):
         parsed_features['mask-data'], default_value=0)
     names = tf.sparse.to_dense(
         parsed_features['name-data'], default_value=0)
+    indices =  tf.reshape(tf.sparse.to_dense(parsed_features['indices']), (atom_number, 3))
 
     return (parsed_features['atom-number'],
             parsed_features['neighbor-number'],
@@ -128,7 +129,7 @@ def data_parse(proto):
             mask,
             names,
             parsed_features['residue'],
-            parsed_features['indices'])
+            indices)
 
 
 def dataset(tfrecords, embeddings=None, label_info=False, short_records=True):
