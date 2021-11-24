@@ -1,0 +1,36 @@
+
+name: test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install nmrgnn
+      uses: actions/checkout@v2
+      with:
+        repository: ur-whitelab/nmrgnn
+        path: nmrgnn
+    - name: Install dependencies
+      run: |
+        pip install flake8 pytest pytest-cov build
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install nmrgnn
+    - name: Run Test
+      run: |
+         cd nmrgnn && pytest tests --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
