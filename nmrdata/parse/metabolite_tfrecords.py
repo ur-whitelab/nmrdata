@@ -83,17 +83,15 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
                 m.AddBond(i, j, bonds[A[i, j]])
     mol = m.GetMol()
     try:
-        AllChem.EmbedMolecule(mol)
-        # Not necessary according to current docs
-        '''
         mol.UpdatePropertyCache(strict=False)
-        for i in range(1000):
-            r = AllChem.MMFFOptimizeMolecule(mol, maxIters=100)
-            if r == 0:
-                break
-            if r == -1:
-                raise ValueError()
-        '''
+        AllChem.EmbedMolecule(mol)
+        # Not necessary according to current docs (?)
+        # for i in range(1000):
+        #    r = AllChem.MMFFOptimizeMolecule(mol, maxIters=100)
+        #    if r == 0:
+        #        break
+        #    if r == -1:
+        #        raise ValueError()
     except (ValueError, RuntimeError) as e:
         print('Unable to process')
         print(Chem.MolToSmiles(mol))
