@@ -83,17 +83,15 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
                 m.AddBond(i, j, bonds[A[i, j]])
     mol = m.GetMol()
     try:
-        AllChem.EmbedMolecule(mol)
-        # Not necessary according to current docs
-        '''
         mol.UpdatePropertyCache(strict=False)
-        for i in range(1000):
-            r = AllChem.MMFFOptimizeMolecule(mol, maxIters=100)
-            if r == 0:
-                break
-            if r == -1:
-                raise ValueError()
-        '''
+        AllChem.EmbedMolecule(mol)
+        # Not necessary according to current docs (?)
+        # for i in range(1000):
+        #    r = AllChem.MMFFOptimizeMolecule(mol, maxIters=100)
+        #    if r == 0:
+        #        break
+        #    if r == -1:
+        #        raise ValueError()
     except (ValueError, RuntimeError) as e:
         print('Unable to process')
         print(Chem.MolToSmiles(mol))
@@ -141,10 +139,10 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
             for a1i, a2i in zip(a1, a2):
                 print(a1i, a2i)
             exit()
-        yield nlist
+        yield np_pos, nlist
 
 
-@click.command()
+@click.command('metabolites')
 @click.argument('data_dir')
 @click.argument('output_name')
 @click.option('--embeddings', default=None, help='path to custom embeddings file')
@@ -172,11 +170,11 @@ def parse_metabolites(data_dir, output_name, embeddings, neighbor_number):
             name_data = names
             mask_data = (peak_data != 0) * 1.0
             try:
-                for ci, nlist in enumerate(adj_to_nlist(atoms, bond_data, embeddings, neighbor_number)):
+                for ci, (pos, nlist) in enumerate(adj_to_nlist(atoms, bond_data, embeddings, neighbor_number)):
                     pbar.set_description('{}:{}. Successes: {}'.format(
                         class_label, ci, successes))
                     record = make_tfrecord(
-                        atom_data, mask_data, nlist, peak_data, embeddings['class'][class_label], name_data)
+                        atom_data, mask_data, nlist, pos, peak_data, embeddings['class'][class_label], name_data)
                     writer.write(record.SerializeToString())
             except ValueError as e:
                 continue

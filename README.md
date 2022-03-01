@@ -25,7 +25,7 @@ pip uninstall -y numpy && pip install numpy
 To install with the parsing functionality, use this
 
 ```sh
-conda install -c omnia -c conda-forge rdkit openmm numpy==1.18.5
+conda install -c omnia openmm
 pip install nmrgnn-data[parse]
 ```
 
@@ -79,7 +79,7 @@ nmrdata write-peak-labels test-structure-shift-data.tfrecord  test-structure-shi
 
 ## Making New Data
 
-See commands `parse-shiftml`, `parse-metabolites`, `parse-shiftx` which are parsers for various databases.
+See commands `nmrparse shiftml`, `nmrparse metabolites`, `nmrparse shiftx` which are parsers for various databases.
 
 ### From RefDB Files
 

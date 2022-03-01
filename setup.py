@@ -17,13 +17,13 @@ setup(name='nmrgnn-data',
       license='MIT',
       packages=['nmrdata', 'nmrdata.data', 'nmrdata.parse'],
       install_requires=[
-          'tensorflow >= 2.3',
+          'tensorflow >= 2.7',
           'click',
-          'numpy>=1.18.5',
+          'numpy',
           'MDAnalysis ~= 2.0',
           'importlib_resources'],
       extras_require={
-          'parse': ['pdbfixer', 'biopython', 'gsd']
+          'parse': ['pdbfixer', 'biopython', 'gsd', 'rdkit-pypi']
       },
       zip_safe=True,
       entry_points='''
