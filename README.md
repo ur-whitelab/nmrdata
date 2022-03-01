@@ -79,7 +79,7 @@ nmrdata write-peak-labels test-structure-shift-data.tfrecord  test-structure-shi
 
 ## Making New Data
 
-See commands `parse-shiftml`, `parse-metabolites`, `parse-shiftx` which are parsers for various databases.
+See commands `nmrparse shiftml`, `nmrparse metabolites`, `nmrparse shiftx` which are parsers for various databases.
 
 ### From RefDB Files
 

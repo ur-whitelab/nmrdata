@@ -89,7 +89,8 @@ def parse_cascade(sdf_file, csv_file, output_name, embeddings, neighbor_number):
             mol_id = int(mol.GetProp('_Name'))
             mshifts = shifts[shifts['mol_id'] == mol_id]
             if len(mshifts) == 0:
-                raise ValueError('No shifts for mol_id: {}'.format(mol_id))
+                print('No shifts for mol_id: {}'.format(mol_id))
+                continue
             try:
                 features, atom_names, pos, labels, new_embeddings = parse_mol(
                     mol, embeddings, mshifts)
