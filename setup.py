@@ -23,7 +23,7 @@ setup(name='nmrgnn-data',
           'MDAnalysis ~= 2.0',
           'importlib_resources'],
       extras_require={
-          'parse': ['pdbfixer', 'biopython', 'gsd']
+          'parse': ['pdbfixer', 'biopython', 'gsd', 'rdkit-pypi']
       },
       zip_safe=True,
       entry_points='''
