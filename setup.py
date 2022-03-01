@@ -19,7 +19,7 @@ setup(name='nmrgnn-data',
       install_requires=[
           'tensorflow >= 2.7',
           'click',
-          'numpy>=1.18.5',
+          'numpy',
           'MDAnalysis ~= 2.0',
           'importlib_resources'],
       extras_require={
