@@ -58,7 +58,7 @@ def parse_xyz(ifile, embeddings):
         yield features, atom_names, pos, peaks
 
 
-@click.command()
+@click.command('shiftml')
 @click.argument('xyz_file')
 @click.argument('output_name')
 @click.option('--embeddings', default=None, help='path to custom embeddings file')

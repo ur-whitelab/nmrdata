@@ -144,7 +144,7 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
         yield np_pos, nlist
 
 
-@click.command()
+@click.command('metabolites')
 @click.argument('data_dir')
 @click.argument('output_name')
 @click.option('--embeddings', default=None, help='path to custom embeddings file')

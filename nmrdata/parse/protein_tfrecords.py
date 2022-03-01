@@ -372,7 +372,7 @@ def process_pdb(path, corr_path, chain_id,
     return result, len(peak_successes) / len(peak_data), len(result), peak_count
 
 
-@click.command()
+@click.command('refdb')
 @click.argument('protein_dir')
 @click.argument('output_name')
 @click.option('--embeddings', default=None, help='path to custom embeddings file')

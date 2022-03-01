@@ -37,6 +37,7 @@ def make_nlist(pos, embeddings, neighbor_number):
 
 
 def parse_mol(mol, embeddings, shifts):
+    new_embeddings = False
     N = mol.GetNumAtoms()
     name = mol.GetProp('_Name')
     features = np.empty((N), dtype=np.int64)
@@ -53,6 +54,7 @@ def parse_mol(mol, embeddings, shifts):
             print('*******Adding new atom name*********')
             print(atom_name)
             embeddings['name'][atom_name] = len(embeddings['name'])
+            new_embeddings = True
         atom_names[i] = embeddings['name'][atom_name]
         pos[i, :] = [mol.GetConformer().GetAtomPosition(i).x, mol.GetConformer(
         ).GetAtomPosition(i).y, mol.GetConformer().GetAtomPosition(i).z]
@@ -60,9 +62,11 @@ def parse_mol(mol, embeddings, shifts):
         if match.shape[0] > 0:
             peaks[i] = match['Shift'].values[0]
             # check it
-            assert match['atom_type'].values[0] == mol.GetAtomWithIdx(
-                i).GetAtomicNum()
-    return features, atom_names, pos, peaks
+            if match['atom_type'].values[0] != mol.GetAtomWithIdx(
+                    i).GetAtomicNum():
+                raise ValueError(
+                    'Mismatch between atom type and atomic number')
+    return features, atom_names, pos, peaks, new_embeddings
 
 
 @click.command('cascade')
@@ -86,8 +90,12 @@ def parse_cascade(sdf_file, csv_file, output_name, embeddings, neighbor_number):
             mshifts = shifts[shifts['mol_id'] == mol_id]
             if len(mshifts) == 0:
                 raise ValueError('No shifts for mol_id: {}'.format(mol_id))
-            features, atom_names, pos, labels = parse_mol(
-                mol, embeddings, mshifts)
+            try:
+                features, atom_names, pos, labels, new_embeddings = parse_mol(
+                    mol, embeddings, mshifts)
+            except ValueError as e:
+                print(e)
+                continue
             class_label = 'CAS'
             if class_label not in embeddings['class']:
                 embeddings['class'][class_label] = len(embeddings['class'])
@@ -99,4 +107,5 @@ def parse_cascade(sdf_file, csv_file, output_name, embeddings, neighbor_number):
                 features, mask_data, nlist, pos, labels, embeddings['class'][class_label], atom_names)
             writer.write(record.SerializeToString())
             successes += 1
-    save_embeddings(embeddings, 'new-embeddings.pb')
+            if new_embeddings:
+                save_embeddings(embeddings, 'new-embeddings.pb')
