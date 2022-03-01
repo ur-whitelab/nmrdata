@@ -5,21 +5,23 @@ import io
 import tqdm
 from nmrdata import *
 
+
 def make_nlist(pos, embeddings, neighbor_number):
     # all nlists are non-bonded here
     N = pos.shape[0]
     pos_nlist = nlist_model(pos, neighbor_number)
-    nlist = np.zeros( (N, neighbor_number, 3) , dtype=np.float32)
+    nlist = np.zeros((N, neighbor_number, 3), dtype=np.float32)
     # a 0 -> non-bonded
     for index in range(N):
         for ni in range(len(pos_nlist[index])):
-            if pos_nlist[index, ni, 0] >= 100: # this is a large distance sentinel indicating not part of nlist
+            # this is a large distance sentinel indicating not part of nlist
+            if pos_nlist[index, ni, 0] >= 100:
                 continue
             j = int(pos_nlist[index, ni, 1])
             # / 10 to get to nm
             nlist[index, ni, 0] = pos_nlist[index, ni, 0] / 10
             nlist[index, ni, 1] = j
-            nlist[index,ni,2] = embeddings['nlist']['nonbonded']
+            nlist[index, ni, 2] = embeddings['nlist']['nonbonded']
         # pad out the nlist
         for index in range(N, N):
             for ni in range(neighbor_number):
@@ -39,7 +41,7 @@ def parse_xyz(ifile, embeddings):
         features = np.empty((N), dtype=np.int64)
         atom_names = np.empty((N), dtype=np.int64)
         pos = np.empty((N, 3), dtype=np.float32)
-        peaks = np.empty((N), dtype=np.float32)
+        peaks = np.zeros((N), dtype=np.float32)
         for i in range(N):
             sline = ifile.readline().split()
             e = sline[0]
@@ -55,6 +57,7 @@ def parse_xyz(ifile, embeddings):
             peaks[i] = float(sline[4])
         yield features, atom_names, pos, peaks
 
+
 @click.command()
 @click.argument('xyz_file')
 @click.argument('output_name')
@@ -64,8 +67,8 @@ def parse_shiftml(xyz_file, output_name, embeddings, neighbor_number):
 
     embeddings = load_embeddings(embeddings)
     with tf.io.TFRecordWriter(f'shiftml-{output_name}.tfrecord',
-                                     options=tf.io.TFRecordOptions(compression_type='GZIP')) as writer,\
-        open(xyz_file) as f:
+                              options=tf.io.TFRecordOptions(compression_type='GZIP')) as writer,\
+            open(xyz_file) as f:
         successes = 0
         pbar = tqdm.tqdm(parse_xyz(f, embeddings))
         for rd in pbar:
@@ -75,9 +78,10 @@ def parse_shiftml(xyz_file, output_name, embeddings, neighbor_number):
                 embeddings['class'][class_label] = len(embeddings['class'])
             mask_data = np.ones_like(atom_data).astype(np.float32)
             nlist = make_nlist(pos, embeddings, neighbor_number)
-            pbar.set_description('DFT with {} atoms. Successes: {}'.format(len(atom_data), successes))
-            record = make_tfrecord(atom_data, mask_data, nlist, peaks, embeddings['class'][class_label], name_data)
+            pbar.set_description(
+                'DFT with {} atoms. Successes: {}'.format(len(atom_data), successes))
+            record = make_tfrecord(
+                atom_data, mask_data, nlist, pos, peaks, embeddings['class'][class_label], name_data)
             writer.write(record.SerializeToString())
             successes += 1
     save_embeddings(embeddings, 'final-embeddings.pb')
-

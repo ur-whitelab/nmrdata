@@ -201,7 +201,7 @@ def process_pdb(path, corr_path, chain_id,
             if debug:
                 print('pdb_offset', pdb_offset)
                 print('seq_offset', seq_offset)
-                #print(sequence_map)
+                # print(sequence_map)
                 # now check alignment - rarely perfect
                 saw_one = False
                 aligned = 0
@@ -364,7 +364,7 @@ def process_pdb(path, corr_path, chain_id,
                                          embedding_dicts['class'][residues[ri].name], names, embedding_dicts)
             snapshot.configuration.step = len(gsd_file)
             gsd_file.append(snapshot)
-        result.append(make_tfrecord(atoms, mask, nlist, peaks, embedding_dicts['class'][residues[ri].name], names, indices=np.array(
+        result.append(make_tfrecord(atoms, mask, nlist, positions, peaks, embedding_dicts['class'][residues[ri].name], names, indices=np.array(
             [model_index, fi, int(residues[ri].id)], dtype=np.int64)))
         if log_file is not None:
             log_file.write('{} {} {} {} {} {} {} {}\n'.format(path.split('/')[-1], corr_path.split(
@@ -395,7 +395,7 @@ def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filte
     embedding_dicts = load_embeddings(embeddings)
 
     # load data info
-    with open(os.path.join(protein_dir,'data.pb'), 'rb') as f:
+    with open(os.path.join(protein_dir, 'data.pb'), 'rb') as f:
         protein_data = pickle.load(f)
 
     items = list(protein_data.values())
@@ -418,7 +418,7 @@ def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filte
                 if pdb_filter_list is not None and entry['pdb_id'] in pdb_filter_list:
                     continue
             try:
-                result, p, n, pc = process_pdb(os.path.join(protein_dir,entry['pdb_file']), os.path.join(protein_dir,entry['corr']), entry['chain'],
+                result, p, n, pc = process_pdb(os.path.join(protein_dir, entry['pdb_file']), os.path.join(protein_dir, entry['corr']), entry['chain'],
                                                gsd_file=gsd_file, debug=debug,
                                                embedding_dicts=embedding_dicts, neighbor_number=neighbor_number,
                                                model_index=index, log_file=rinfo, shiftx_style=shiftx)

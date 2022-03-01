@@ -141,7 +141,7 @@ def adj_to_nlist(atoms, A, embeddings, neighbor_number):
             for a1i, a2i in zip(a1, a2):
                 print(a1i, a2i)
             exit()
-        yield nlist
+        yield np_pos, nlist
 
 
 @click.command()
@@ -172,11 +172,11 @@ def parse_metabolites(data_dir, output_name, embeddings, neighbor_number):
             name_data = names
             mask_data = (peak_data != 0) * 1.0
             try:
-                for ci, nlist in enumerate(adj_to_nlist(atoms, bond_data, embeddings, neighbor_number)):
+                for ci, (pos, nlist) in enumerate(adj_to_nlist(atoms, bond_data, embeddings, neighbor_number)):
                     pbar.set_description('{}:{}. Successes: {}'.format(
                         class_label, ci, successes))
                     record = make_tfrecord(
-                        atom_data, mask_data, nlist, peak_data, embeddings['class'][class_label], name_data)
+                        atom_data, mask_data, nlist, pos, peak_data, embeddings['class'][class_label], name_data)
                     writer.write(record.SerializeToString())
             except ValueError as e:
                 continue
