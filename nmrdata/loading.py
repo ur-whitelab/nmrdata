@@ -97,7 +97,7 @@ def data_parse(proto):
         'atom-number': tf.io.FixedLenFeature([], tf.int64),
         'neighbor-number': tf.io.FixedLenFeature([], tf.int64),
         'bond-data': tf.io.VarLenFeature(tf.float32),
-        'position-data': tf.io.VarLenFeature(tf.float32),
+        # 'position-data': tf.io.VarLenFeature(tf.float32),
         'atom-data': tf.io.VarLenFeature(tf.int64),
         'peak-data': tf.io.VarLenFeature(tf.float32),
         'mask-data': tf.io.VarLenFeature(tf.float32),
@@ -112,8 +112,11 @@ def data_parse(proto):
     neighbor_number = parsed_features['neighbor-number']
     bonds = tf.reshape(tf.sparse.to_dense(
         parsed_features['bond-data'], default_value=0), (atom_number, neighbor_number, 3))
-    positions = tf.reshape(tf.sparse.to_dense(
-        parsed_features['position-data'], default_value=0), (atom_number, 3))
+    if 'position-data' in parsed_features:
+        positions = tf.reshape(tf.sparse.to_dense(
+            parsed_features['position-data'], default_value=0), (atom_number, 3))
+    else:
+        positions = None
     atoms = tf.sparse.to_dense(
         parsed_features['atom-data'], default_value=0)
     peaks = tf.sparse.to_dense(
@@ -162,9 +165,10 @@ def data_shorten(*args, embeddings, label_info=False):
     nlist = tf.cast(nlist_full[:, :, 1], tf.int32)
     nodes = tf.one_hot(nodes, len(embeddings['atom']))
 
+    # the mask[None] is to make it batch compatible - which seems to matter for Keras losses
     if label_info:
-        return (nodes, nlist, edges, inv_degree), tf.stack([labels, tf.cast(names, labels.dtype), mask], axis=1), mask
-    return (nodes, nlist, edges, inv_degree), labels, mask
+        return (nodes, nlist, edges, inv_degree), tf.stack([labels, tf.cast(names, labels.dtype), mask], axis=1), mask[None]
+    return (nodes, nlist, edges, inv_degree), labels, mask[None]
 
 
 def make_tfrecord(atom_data, mask_data, nlist, pos, peak_data, residue, atom_names, weights=None, indices=np.zeros((3, 1), dtype=np.int64)):
