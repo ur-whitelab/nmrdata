@@ -53,8 +53,6 @@ def pyparse_corr(path, shiftx_style):
 def process_corr(path, debug, shiftx_style):
 
     peaks = pyparse_corr(path, shiftx_style)
-    print(peaks)
-    exit()
 
     if len(peaks) == 0:
         raise ValueError('Could not parse file')
@@ -118,7 +116,6 @@ def process_pdb(path, corr_path, chain_id,
                 gsd_file, embedding_dicts, neighbor_number, neighbor_margin=8,
                 debug=False, units=unit.nanometer, frame_number=3, model_index=0,
                 log_file=None, shiftx_style=False):
-
     global MA_LOST_FRAGS
     if shiftx_style:
         frame_number = 1
@@ -425,7 +422,7 @@ def parse_refdb(protein_dir, embeddings, output_name, neighbor_number, pdb_filte
                 pbar.set_description('Processed PDB {} ({}). Successes {} ({:.2}). Total Records: {}, Peaks: {}. Wrote frags: {}. Lost frags {}({})'.format(
                     entry['pdb_id'], entry['corr'], n, p, records, peaks, index % gsd_frag_period == 0, MA_LOST_FRAGS, MA_LOST_FRAGS / (MA_LOST_FRAGS + n + 1)))
                 # turned off for now
-                if False and len(result) == 0:
+                if False or len(result) == 0:
                     raise ValueError(
                         'Failed to find any records in' + entry['pdb_id'], entry['corr'])
                 for r in result:
