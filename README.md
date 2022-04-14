@@ -8,6 +8,47 @@ This contains the parsing scripts and data used for our [GNN chemical shift pred
 pip install nmrgnn-data
 ```
 
+## Working in Python
+
+Here's an example of how to load and work with data in python. The records
+are loaded as a tensorflow dataset ([read more here](https://www.tensorflow.org/api_docs/python/tf/data/Dataset)), but can be used in a for loop as shown below.
+
+```py
+import nmrdata
+dataset = nmrdata.load_records('data/metabolite-records.tfrecord')
+for record in dataset:
+    # get single record
+    break
+print(record.keys())
+```
+output:
+```
+dict_keys(['natoms', 'nneigh', 'features', 'nlist', 'positions', 'peaks', 'mask', 'name', 'class', 'index'])
+```
+
+Access positions as a numpy array
+```py
+record['positions'].numpy()
+```
+output:
+```
+array([[ 0.83740795,  0.09760247,  0.2959486 ],
+       [-0.562893  ,  0.00262405, -0.00434441],
+       [-1.0725924 , -0.37873718,  0.9061929 ],
+       [-0.75536764, -0.72710234, -0.8159687 ],
+       [-1.0367495 ,  0.9557108 , -0.27988592],
+       [ 1.2855262 , -0.8334997 ,  0.10487328],
+       [ 1.3046683 ,  0.8834019 , -0.20681578]], dtype=float32)
+```
+Get chemical shifts
+```py
+record['peaks'].numpy()
+```
+```
+array([0.  , 0.  , 2.59, 2.59, 2.59, 0.  , 0.  ], dtype=float32)
+```
+
+
 ## Numpy Error
 
 If you see this error:

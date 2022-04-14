@@ -97,7 +97,7 @@ def data_parse(proto):
         'atom-number': tf.io.FixedLenFeature([], tf.int64),
         'neighbor-number': tf.io.FixedLenFeature([], tf.int64),
         'bond-data': tf.io.VarLenFeature(tf.float32),
-        # 'position-data': tf.io.VarLenFeature(tf.float32),
+        'position-data': tf.io.VarLenFeature(tf.float32),
         'atom-data': tf.io.VarLenFeature(tf.int64),
         'peak-data': tf.io.VarLenFeature(tf.float32),
         'mask-data': tf.io.VarLenFeature(tf.float32),
